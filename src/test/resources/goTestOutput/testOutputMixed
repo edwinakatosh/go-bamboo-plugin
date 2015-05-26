@@ -1,0 +1,11 @@
+=== RUN TestDoAFail
+--- FAIL: TestDoAFail (0.00s)
+	first_test.go:7: 5 != 6
+=== RUN TestDoAPass
+--- PASS: TestDoAPass (0.00s)
+=== RUN TestDoASkip
+--- SKIP: TestDoASkip (0.00s)
+	first_test.go:15: 
+FAIL
+FAIL	github.com/handcraftedbits/go-bamboo/first	0.004s
+?   	github.com/handcraftedbits/go-bamboo/second	[no test files]

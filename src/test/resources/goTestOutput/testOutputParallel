@@ -1,0 +1,42 @@
+=== RUN TestDoAPass1
+=== RUN TestDoAPass2
+=== RUN TestDoAPass3
+=== RUN TestDoAPass4
+=== RUN TestDoAPass5
+=== RUN TestDoAPass6
+=== RUN TestDoAPass7
+=== RUN TestDoAPass8
+=== RUN TestDoAPass9
+=== RUN TestDoAPass10
+=== RUN TestDoAPass11
+=== RUN TestDoAPass12
+=== RUN TestDoAPass13
+=== RUN TestDoAPass14
+=== RUN TestDoAPass15
+=== RUN TestDoAPass16
+=== RUN TestDoAPass17
+=== RUN TestDoAPass18
+=== RUN TestDoAPass19
+=== RUN TestDoAPass20
+--- PASS: TestDoAPass1 (1.00s)
+--- PASS: TestDoAPass2 (1.00s)
+--- PASS: TestDoAPass3 (1.00s)
+--- PASS: TestDoAPass4 (1.00s)
+--- PASS: TestDoAPass5 (1.00s)
+--- PASS: TestDoAPass6 (1.00s)
+--- PASS: TestDoAPass7 (1.00s)
+--- PASS: TestDoAPass8 (1.00s)
+--- PASS: TestDoAPass9 (1.00s)
+--- PASS: TestDoAPass10 (1.00s)
+--- PASS: TestDoAPass11 (1.00s)
+--- PASS: TestDoAPass12 (1.00s)
+--- PASS: TestDoAPass13 (1.00s)
+--- PASS: TestDoAPass14 (1.00s)
+--- PASS: TestDoAPass15 (1.00s)
+--- PASS: TestDoAPass16 (1.00s)
+--- PASS: TestDoAPass17 (1.00s)
+--- PASS: TestDoAPass18 (1.00s)
+--- PASS: TestDoAPass19 (1.00s)
+--- PASS: TestDoAPass20 (1.00s)
+PASS
+ok  	github.com/handcraftedbits/go-bamboo/first	0.004s

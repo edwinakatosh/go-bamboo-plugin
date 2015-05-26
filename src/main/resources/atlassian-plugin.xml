@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  #%L
+  Go Plugin for Bamboo
+  %%
+  Copyright (C) 2015 HandcraftedBits
+  %%
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+  
+       http://www.apache.org/licenses/LICENSE-2.0
+  
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  #L%
+  -->
+<atlassian-plugin xmlns="http://www.atlassian.com/schema/plugins" key="com.handcraftedbits.bamboo.plugin.go"
+                  name="${project.name}" plugins-version="2">
+  <plugin-info>
+    <description>This plugin provides support for Go projects in Bamboo.</description>
+    <version>${project.version}</version>
+    <application-version min="5.2" />
+    <vendor name="HandcraftedBits" url="https://www.handcraftedbits.com" />
+    <param name="plugin-icon">com/handcraftedbits/bamboo/plugin/go/image/plugin-icon.png</param>
+    <param name="plugin-logo">com/handcraftedbits/bamboo/plugin/go/image/plugin-logo.png</param>
+  </plugin-info>
+
+  <!-- Go capability -->
+  <capabilityType key="capability.go" name="Go"
+                  class="com.handcraftedbits.bamboo.plugin.go.capability.GoCapabilityTypeModule" sortOrder="2512">
+    <description>The Go capability type</description>
+
+    <resource type="freemarker" name="edit"
+              location="com/handcraftedbits/bamboo/plugin/go/template/goCapabilityEdit.ftl" />
+  </capabilityType>
+
+  <!-- Go build task -->
+  <taskType key="task.go.build" name="Go Builder"
+            class="com.handcraftedbits.bamboo.plugin.go.task.build.GoBuildTaskType">
+    <description>Builds and installs Go projects</description>
+    <help link="task.build.help.link" title="task.build.help.text" />
+
+    <category name="builder" />
+
+    <configuration class="com.handcraftedbits.bamboo.plugin.go.task.build.GoBuildTaskConfigurator" />
+    <resource type="freemarker" name="edit"
+              location="com/handcraftedbits/bamboo/plugin/go/template/goBuildTaskEdit.ftl" />
+    <resource type="download" name="icon" location="com/handcraftedbits/bamboo/plugin/go/image/plugin-logo.png" />
+  </taskType>
+
+  <!-- Go dependency task -->
+  <taskType key="task.go.dependency" name="Go Dependency Fetcher"
+            class="com.handcraftedbits.bamboo.plugin.go.task.dependency.GoDependencyTaskType">
+    <description>Fetches Go project dependencies</description>
+    <category name="builder" />
+    <help link="task.dependency.help.link" title="task.dependency.help.text" />
+
+    <configuration class="com.handcraftedbits.bamboo.plugin.go.task.dependency.GoDependencyTaskConfigurator" />
+    <resource type="freemarker" name="edit"
+              location="com/handcraftedbits/bamboo/plugin/go/template/goDependencyTaskEdit.ftl" />
+    <resource type="download" name="icon" location="com/handcraftedbits/bamboo/plugin/go/image/plugin-logo.png" />
+  </taskType>
+
+  <!-- Go test task -->
+  <taskType key="task.go.test" name="Go Test Runner"
+            class="com.handcraftedbits.bamboo.plugin.go.task.test.GoTestTaskType">
+    <description>Runs Go tests</description>
+    <category name="test" />
+    <help link="task.test.help.link" title="task.test.help.text" />
+
+    <configuration class="com.handcraftedbits.bamboo.plugin.go.task.test.GoTestTaskConfigurator" />
+    <resource type="freemarker" name="edit"
+              location="com/handcraftedbits/bamboo/plugin/go/template/goTestTaskEdit.ftl" />
+    <resource type="download" name="icon" location="com/handcraftedbits/bamboo/plugin/go/image/plugin-logo.png" />
+  </taskType>
+
+  <!-- Go test parser task -->
+  <taskType key="task.go.test.parser" name="Go Test Parser"
+            class="com.handcraftedbits.bamboo.plugin.go.task.parser.GoTestParserTaskType">
+    <description>Parses and displays Go test results</description>
+    <category name="test" />
+    <help link="task.parser.help.link" title="task.parser.help.text" />
+
+    <configuration class="com.handcraftedbits.bamboo.plugin.go.task.parser.GoTestParserTaskConfigurator" />
+    <resource type="freemarker" name="edit"
+              location="com/handcraftedbits/bamboo/plugin/go/template/goTestParserTaskEdit.ftl" />
+    <resource type="download" name="icon" location="com/handcraftedbits/bamboo/plugin/go/image/plugin-logo.png" />
+  </taskType>
+
+  <!-- i18n -->
+  <resource type="i18n" name="i18n" location="com.handcraftedbits.bamboo.plugin.go.i18n.english" />
+</atlassian-plugin>

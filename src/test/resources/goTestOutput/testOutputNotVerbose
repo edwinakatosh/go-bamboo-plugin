@@ -1,0 +1,7 @@
+ok  	github.com/handcraftedbits/go-bamboo/first	2.000s
+?   	github.com/handcraftedbits/go-bamboo/second	[no test files]
+--- FAIL: TestDoC (0.00s)
+	third_test.go:6: failed
+FAIL
+FAIL	github.com/handcraftedbits/go-bamboo/third	0.008s
+FAIL	github.com/handcraftedbits/go-bamboo/fourth	0.008s

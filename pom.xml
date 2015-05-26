@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  #%L
+  Go Plugin for Bamboo
+  %%
+  Copyright (C) 2015 HandcraftedBits
+  %%
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+  
+       http://www.apache.org/licenses/LICENSE-2.0
+  
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  #L%
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.handcraftedbits</groupId>
+  <artifactId>go-bamboo-plugin</artifactId>
+  <packaging>jar</packaging>
+  <name>Go Plugin for Bamboo</name>
+  <description>Plugin for Atlassian Bamboo that adds support for Go language projects</description>
+  <url>https://github.com/handcraftedbits/go-bamboo-plugin</url>
+  <version>1.0.0</version>
+  <inceptionYear>2015</inceptionYear>
+
+  <developers>
+    <developer>
+      <name>Curtiss Howard</name>
+      <organizationUrl>https://github.com/handcraftedbits</organizationUrl>
+    </developer>
+  </developers>
+  <organization>
+    <name>HandcraftedBits</name>
+    <url>https://github.com/handcraftedbits</url>
+  </organization>
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <scm>
+    <url>https://github.com/handcraftedbits/go-bamboo-plugin</url>
+    <connection>scm:git:git://github.com/handcraftedbits/go-bamboo-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:handcraftedbits/go-bamboo-plugin.git</developerConnection>
+    <tag>release/1.0.0</tag>
+  </scm>
+  <issueManagement>
+    <url>https://github.com/handcraftedbits/go-bamboo-plugin/issues</url>
+    <system>GitHub Issues</system>
+  </issueManagement>
+
+  <properties>
+    <name.license>apache_v2</name.license>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <version.java>1.7</version.java>
+
+    <version.dep.bamboo>5.2</version.dep.bamboo>
+    <version.dep.junit>4.12</version.dep.junit>
+
+    <version.plugin.compiler>3.3</version.plugin.compiler>
+    <version.plugin.license>1.8</version.plugin.license>
+    <version.plugin.source>2.4</version.plugin.source>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.atlassian.bamboo</groupId>
+      <artifactId>atlassian-bamboo-web</artifactId>
+      <version>${version.dep.bamboo}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${version.dep.junit}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${version.plugin.compiler}</version>
+          <configuration>
+            <source>${version.java}</source>
+            <target>${version.java}</target>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>${version.plugin.source}</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>${version.plugin.license}</version>
+        <executions>
+          <execution>
+            <id>update-copyright</id>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>update-file-header</goal>
+            </goals>
+            <configuration>
+              <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
+              <licenseName>${name.license}</licenseName>
+              <roots>
+                <root>.</root>
+              </roots>
+              <includes>
+                <include>pom.xml</include>
+                <include>src/main/java/**/*</include>
+                <include>src/main/resources/**/*.properties</include>
+                <include>src/main/resources/**/*.xml</include>
+                <include>src/test/java/**/*</include>
+              </includes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>update-license</id>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>update-project-license</goal>
+            </goals>
+            <configuration>
+              <licenseName>${name.license}</licenseName>
+              <licenseFile>${basedir}/LICENSE</licenseFile>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <repositories>
+    <repository>
+      <id>atlassian-public</id>
+      <url>https://maven.atlassian.com/repository/public</url>
+      <releases>
+        <enabled>true</enabled>
+        <checksumPolicy>warn</checksumPolicy>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>never</updatePolicy>
+        <checksumPolicy>warn</checksumPolicy>
+      </snapshots>
+    </repository>
+  </repositories>
+</project>
