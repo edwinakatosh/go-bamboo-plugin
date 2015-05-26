@@ -27,7 +27,7 @@
   <name>Go Plugin for Bamboo</name>
   <description>Plugin for Atlassian Bamboo that adds support for Go language projects</description>
   <url>https://github.com/handcraftedbits/go-bamboo-plugin</url>
-  <version>1.0.0</version>
+  <version>1.0.1-SNAPSHOT</version>
   <inceptionYear>2015</inceptionYear>
 
   <developers>
