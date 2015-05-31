@@ -73,6 +73,16 @@ public final class GoArgumentList {
 
      @Override
      public String toString () {
-          return String.join(" ", this.items);
+          final StringBuilder result = new StringBuilder();
+
+          for (int i = 0; i < this.items.size(); ++i) {
+               result.append(this.items.get(i));
+
+               if (i < (this.items.size() - 1)) {
+                    result.append(" ");
+               }
+          }
+
+          return result.toString();
      }
 }
