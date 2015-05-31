@@ -1,4 +1,4 @@
-# Go Plugin for Bamboo
+# Go Plugin for Bamboo [![Build Status](https://travis-ci.org/handcraftedbits/go-bamboo-plugin.svg?branch=development)](https://travis-ci.org/handcraftedbits/go-bamboo-plugin)
 
 A plugin for [Atlassian Bamboo](https://www.atlassian.com/software/bamboo) that enables Bamboo to be used as a
 Continuous Integration server for [Go](http://golang.org/) projects.
