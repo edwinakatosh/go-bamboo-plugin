@@ -32,16 +32,16 @@ able to detect their locations automatically.  The Go Plugin for Bamboo can also
 2. From the top menu bar, click the **Create** button and then **Create a new plan**.
 3. Select **New Project** from the **Project** dropdown.
 4. Enter the following information:
-  * **Project name**: _Go Plugin for Bamboo Tutorial_
-  * **Project key**: _GPBT_
-  * **Plan name**: _Default_
-  * **Plan key**: _DEF_
+  * **Project name**: `Go Plugin for Bamboo Tutorial`
+  * **Project key**: `GPBT`
+  * **Plan name**: `Default`
+  * **Plan key**: `DEF`
   * **Repository host**: Select **Link new repository**, click **Other**, then **GitHub**.
-  * **Display name**: _gpbt_master_
-  * **Username**: _handcraftedbits_
+  * **Display name**: `gpbt_master`
+  * **Username**: `handcraftedbits`
   * **Password**: leave empty
-  * Click **Load Repositories**, then select **handcraftedbits/gpbt** from the **Repository** dropdown.
-  * **Branch**: _master_
+  * Click **Load Repositories**, then select `handcraftedbits/gpbt` from the **Repository** dropdown.
+  * **Branch**: `master`
 5. Click **Configure plan**.
 
 # Configure Tasks
@@ -55,10 +55,10 @@ We need to make a small change to the default **Source Code Checkout** task Bamb
 Bamboo will clone the tutorial project's source directly to the build plan's working directory.  Since the Go Plugin for
 Bamboo considers that directory the root of the Go project's `GOPATH`, we need to check out the tutorial source code to
 a subdirectory consistent with Go standards.  Since the tutorial project is located at
-https://github.com/handcraftedbits/gpbt, we need to check the source code out to the subdirectory _src/github.com/handcraftedbits/gpbt_:
+`https://github.com/handcraftedbits/gpbt`, we need to check the source code out to the subdirectory `src/github.com/handcraftedbits/gpbt`:
 
 1. Click **Source Code Checkout** on the left-hand side of the page.
-2. Enter _src/github.com/handcraftedbits/gpbt_ in the **Checkout Directory** text field.  This path will be used in
+2. Enter `src/github.com/handcraftedbits/gpbt` in the **Checkout Directory** text field.  This path will be used in
 other build tasks.
 3. Click the **Save** button.
 
@@ -71,9 +71,8 @@ Go Plugin for Bamboo's **Go Dependency Fetcher** task can run `godep` and fetch 
 2. Select **Go Dependency Fetcher** from the list of build tasks.
 3. Enter the `GOROOT` for the `go` executable defined earlier in the **GOROOT** text field.  The Go Plugin for Bamboo
 will attempt to set this value automatically: it will use the `GOROOT` environment variable if it is defined for the
-Bamboo server or the parent directory of the `go` executable.  If the automatically determined value is not appropriate,
-you must fix it.
-4. Enter _src/github.com/handcraftedbits/gpbt_ in the **Source path** text field.
+Bamboo server or the parent directory of the `go` executable.  If the automatically determined value is not appropriate, you must fix it.
+4. Enter `src/github.com/handcraftedbits/gpbt` in the **Source path** text field.
 
 # Go Test Runner
 
@@ -83,8 +82,8 @@ because we want the build to fail right away if tests don't pass.
 1. Click the **Add task** button on the left-had side of the page.
 2. Select **Go Test Runner** from the list of build tasks.
 3. Enter the `GOROOT` for the `go` executable defined earlier in the **GOROOT** text field.
-4. Enter _src/github.com/handcraftedbits/gpbt_ in the **Source path** text field.
-5. In the **Packages to test** text area, leave the value as _./..._ since we want to test all packages.  If you wanted
+4. Enter `src/github.com/handcraftedbits/gpbt` in the **Source path** text field.
+5. In the **Packages to test** text area, leave the value as `./...` since we want to test all packages.  If you wanted
 to test packages individually (for example, to specify flags that may not exist in other packages) you could, but in
 general testing all packages at once is fine.
 
@@ -104,8 +103,8 @@ Finally, we can build and install our Go project:
 1. Click the **Add task** button on the left-had side of the page.
 2. Select **Go Builder** from the list of build tasks.
 3. Enter the `GOROOT` for the `go` executable defined earlier in the **GOROOT** text field.
-4. Enter _src/github.com/handcraftedbits/gpbt_ in the **Source path** text field.
-5. In the **Packages to build** text area, leave the value as _./..._ since we want to build and install all packages.
+4. Enter `src/github.com/handcraftedbits/gpbt` in the **Source path** text field.
+5. In the **Packages to build** text area, leave the value as `./...` since we want to build and install all packages.
 If you wanted to build packages individually you could, but in general building all packages at once is preferred.
 
 Check the **Yes please!** checkbox under the **Enable this plan?** heading and click the **Create** button.
@@ -117,12 +116,12 @@ We should also add our compiled executable as an artifact of the build:
 3. Click the **Artifacts** tab.
 4. Click the **Create definition** button.
 5. Enter the following information:
-  * **Name**: _gpbt Executable_
-  * **Location**: _bin/_
-  * **Copy pattern**: _gpbt_
+  * **Name**: `gpbt Executable`
+  * **Location**: `bin/`
+  * **Copy pattern**: `gpbt`
 
 Let's run the build plan by selecting **Run plan** from the **Run** dropdown.  After a few moments, you should see the
-build succeed.  Congratulations, you've succesfully tested and built a Go project using Bamboo!
+build succeed.  Congratulations, you've successfully tested and built a Go project using Bamboo!
 
 # Examining Test results
 
@@ -134,5 +133,5 @@ Bamboo's native test reporting capabilities.  Click the **Tests** tab and then t
 The Bamboo test results will look very much like the output of `go test` with a couple of differences:
 
 * Bamboo doesn't allow periods in package names, so the Go Plugin for Bamboo will replace them with underscores; notice
-how _github.com_ becomes _github_com_.
-* Whenever a package has no tests the Go Plugin for Bamboo will automatically create a test case called _AllTests_.
+how `github.com` becomes `github_com`.
+* Whenever a package has no tests the Go Plugin for Bamboo will automatically create a test case called `AllTests`.
