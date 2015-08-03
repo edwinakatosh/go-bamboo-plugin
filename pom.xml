@@ -21,14 +21,20 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.handcraftedbits</groupId>
+  <groupId>com.handcraftedbits.bamboo</groupId>
   <artifactId>go-bamboo-plugin</artifactId>
   <packaging>jar</packaging>
   <name>Go Plugin for Bamboo</name>
   <description>Plugin for Atlassian Bamboo that adds support for Go language projects</description>
   <url>https://github.com/handcraftedbits/go-bamboo-plugin</url>
-  <version>1.0.1-SNAPSHOT</version>
+  <version>1.1.0-SNAPSHOT</version>
   <inceptionYear>2015</inceptionYear>
+
+  <parent>
+    <groupId>com.handcraftedbits</groupId>
+    <artifactId>handcraftedbits-parent</artifactId>
+    <version>1.0.0</version>
+  </parent>
 
   <developers>
     <developer>
@@ -51,7 +57,7 @@
     <url>https://github.com/handcraftedbits/go-bamboo-plugin</url>
     <connection>scm:git:git://github.com/handcraftedbits/go-bamboo-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:handcraftedbits/go-bamboo-plugin.git</developerConnection>
-    <tag>release/1.0.0</tag>
+    <tag>release/1.1.0</tag>
   </scm>
   <issueManagement>
     <url>https://github.com/handcraftedbits/go-bamboo-plugin/issues</url>
@@ -60,15 +66,10 @@
 
   <properties>
     <name.license>apache_v2</name.license>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <version.java>1.7</version.java>
 
     <version.dep.bamboo>5.2</version.dep.bamboo>
-    <version.dep.junit>4.12</version.dep.junit>
 
-    <version.plugin.compiler>3.3</version.plugin.compiler>
-    <version.plugin.license>1.8</version.plugin.license>
-    <version.plugin.source>2.4</version.plugin.source>
+    <plugin.source.skip>false</plugin.source.skip>
   </properties>
 
   <dependencies>
@@ -78,92 +79,7 @@
       <version>${version.dep.bamboo}</version>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${version.dep.junit}</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
-
-  <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>${version.plugin.compiler}</version>
-          <configuration>
-            <source>${version.java}</source>
-            <target>${version.java}</target>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-        <filtering>true</filtering>
-      </resource>
-    </resources>
-
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <version>${version.plugin.source}</version>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <phase>package</phase>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <version>${version.plugin.license}</version>
-        <executions>
-          <execution>
-            <id>update-copyright</id>
-            <phase>process-sources</phase>
-            <goals>
-              <goal>update-file-header</goal>
-            </goals>
-            <configuration>
-              <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
-              <licenseName>${name.license}</licenseName>
-              <roots>
-                <root>.</root>
-              </roots>
-              <includes>
-                <include>pom.xml</include>
-                <include>src/main/java/**/*</include>
-                <include>src/main/resources/**/*.properties</include>
-                <include>src/main/resources/**/*.xml</include>
-                <include>src/test/java/**/*</include>
-              </includes>
-            </configuration>
-          </execution>
-          <execution>
-            <id>update-license</id>
-            <phase>process-sources</phase>
-            <goals>
-              <goal>update-project-license</goal>
-            </goals>
-            <configuration>
-              <licenseName>${name.license}</licenseName>
-              <licenseFile>${basedir}/LICENSE</licenseFile>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
   <repositories>
     <repository>
