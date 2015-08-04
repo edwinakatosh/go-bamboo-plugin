@@ -33,7 +33,8 @@ See the [tutorial](doc/tutorial.md) for a step-by-step look at how a Go project 
 
 # TODO
 
-- [ ] Generate [Atlassian Clover](https://www.atlassian.com/software/clover/overview)-formatted code coverage reports so
-`go test -cover` can be integrated natively into Bamboo.
+- ~~[ ] Generate [Atlassian Clover](https://www.atlassian.com/software/clover/overview)-formatted code coverage reports so `go test -cover` can be integrated natively into Bamboo.~~
+- [ ] Create a merged `go tool cover -html` output file so the all or part of the project's unit tests can be attached
+as a build artifact.
 - [ ] Support alternative dependency fetchers.
 - [ ] Support other Go tools (e.g., `go lint`, `go vet`, `go generate`).
