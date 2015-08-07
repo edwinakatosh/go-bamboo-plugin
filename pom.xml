@@ -68,6 +68,9 @@
     <name.license>apache_v2</name.license>
 
     <version.dep.bamboo>5.2</version.dep.bamboo>
+    <version.dep.jsoup>1.8.3</version.dep.jsoup>
+
+    <version.plugin.shade>2.4.1</version.plugin.shade>
 
     <plugin.source.skip>false</plugin.source.skip>
   </properties>
@@ -79,7 +82,40 @@
       <version>${version.dep.bamboo}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.jsoup</groupId>
+      <artifactId>jsoup</artifactId>
+      <version>${version.dep.jsoup}</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>${version.plugin.shade}</version>
+        <executions>
+          <execution>
+            <id>embed-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <artifactSet>
+                <includes>
+                  <include>org.jsoup:jsoup</include>
+                </includes>
+              </artifactSet>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
   <repositories>
     <repository>

@@ -1,0 +1,3543 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">time/format.go (89.7%)</option>
+				
+				<option value="file1">time/sleep.go (100.0%)</option>
+				
+				<option value="file2">time/sys_unix.go (83.9%)</option>
+				
+				<option value="file3">time/tick.go (90.0%)</option>
+				
+				<option value="file4">time/time.go (96.2%)</option>
+				
+				<option value="file5">time/zoneinfo.go (88.4%)</option>
+				
+				<option value="file6">time/zoneinfo_read.go (80.0%)</option>
+				
+				<option value="file7">time/zoneinfo_unix.go (76.9%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" >// Copyright 2010 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package time
+
+import "errors"
+
+// These are predefined layouts for use in Time.Format and Time.Parse.
+// The reference time used in the layouts is the specific time:
+//        Mon Jan 2 15:04:05 MST 2006
+// which is Unix time 1136239445. Since MST is GMT-0700,
+// the reference time can be thought of as
+//        01/02 03:04:05PM '06 -0700
+// To define your own format, write down what the reference time would look
+// like formatted your way; see the values of constants like ANSIC,
+// StampMicro or Kitchen for examples. The model is to demonstrate what the
+// reference time looks like so that the Format and Parse methods can apply
+// the same transformation to a general time value.
+//
+// Within the format string, an underscore _ represents a space that may be
+// replaced by a digit if the following number (a day) has two digits; for
+// compatibility with fixed-width Unix time formats.
+//
+// A decimal point followed by one or more zeros represents a fractional
+// second, printed to the given number of decimal places.  A decimal point
+// followed by one or more nines represents a fractional second, printed to
+// the given number of decimal places, with trailing zeros removed.
+// When parsing (only), the input may contain a fractional second
+// field immediately after the seconds field, even if the layout does not
+// signify its presence. In that case a decimal point followed by a maximal
+// series of digits is parsed as a fractional second.
+//
+// Numeric time zone offsets format as follows:
+//        -0700  ±hhmm
+//        -07:00 ±hh:mm
+// Replacing the sign in the format with a Z triggers
+// the ISO 8601 behavior of printing Z instead of an
+// offset for the UTC zone.  Thus:
+//        Z0700  Z or ±hhmm
+//        Z07:00 Z or ±hh:mm
+const (
+        ANSIC       = "Mon Jan _2 15:04:05 2006"
+        UnixDate    = "Mon Jan _2 15:04:05 MST 2006"
+        RubyDate    = "Mon Jan 02 15:04:05 -0700 2006"
+        RFC822      = "02 Jan 06 15:04 MST"
+        RFC822Z     = "02 Jan 06 15:04 -0700" // RFC822 with numeric zone
+        RFC850      = "Monday, 02-Jan-06 15:04:05 MST"
+        RFC1123     = "Mon, 02 Jan 2006 15:04:05 MST"
+        RFC1123Z    = "Mon, 02 Jan 2006 15:04:05 -0700" // RFC1123 with numeric zone
+        RFC3339     = "2006-01-02T15:04:05Z07:00"
+        RFC3339Nano = "2006-01-02T15:04:05.999999999Z07:00"
+        Kitchen     = "3:04PM"
+        // Handy time stamps.
+        Stamp      = "Jan _2 15:04:05"
+        StampMilli = "Jan _2 15:04:05.000"
+        StampMicro = "Jan _2 15:04:05.000000"
+        StampNano  = "Jan _2 15:04:05.000000000"
+)
+
+const (
+        _                        = iota
+        stdLongMonth             = iota + stdNeedDate  // "January"
+        stdMonth                                       // "Jan"
+        stdNumMonth                                    // "1"
+        stdZeroMonth                                   // "01"
+        stdLongWeekDay                                 // "Monday"
+        stdWeekDay                                     // "Mon"
+        stdDay                                         // "2"
+        stdUnderDay                                    // "_2"
+        stdZeroDay                                     // "02"
+        stdHour                  = iota + stdNeedClock // "15"
+        stdHour12                                      // "3"
+        stdZeroHour12                                  // "03"
+        stdMinute                                      // "4"
+        stdZeroMinute                                  // "04"
+        stdSecond                                      // "5"
+        stdZeroSecond                                  // "05"
+        stdLongYear              = iota + stdNeedDate  // "2006"
+        stdYear                                        // "06"
+        stdPM                    = iota + stdNeedClock // "PM"
+        stdpm                                          // "pm"
+        stdTZ                    = iota                // "MST"
+        stdISO8601TZ                                   // "Z0700"  // prints Z for UTC
+        stdISO8601SecondsTZ                            // "Z070000"
+        stdISO8601ColonTZ                              // "Z07:00" // prints Z for UTC
+        stdISO8601ColonSecondsTZ                       // "Z07:00:00"
+        stdNumTZ                                       // "-0700"  // always numeric
+        stdNumSecondsTz                                // "-070000"
+        stdNumShortTZ                                  // "-07"    // always numeric
+        stdNumColonTZ                                  // "-07:00" // always numeric
+        stdNumColonSecondsTZ                           // "-07:00:00"
+        stdFracSecond0                                 // ".0", ".00", ... , trailing zeros included
+        stdFracSecond9                                 // ".9", ".99", ..., trailing zeros omitted
+
+        stdNeedDate  = 1 &lt;&lt; 8             // need month, day, year
+        stdNeedClock = 2 &lt;&lt; 8             // need hour, minute, second
+        stdArgShift  = 16                 // extra argument in high bits, above low stdArgShift
+        stdMask      = 1&lt;&lt;stdArgShift - 1 // mask out argument
+)
+
+// std0x records the std values for "01", "02", ..., "06".
+var std0x = [...]int{stdZeroMonth, stdZeroDay, stdZeroHour12, stdZeroMinute, stdZeroSecond, stdYear}
+
+// startsWithLowerCase reports whether the string has a lower-case letter at the beginning.
+// Its purpose is to prevent matching strings like "Month" when looking for "Mon".
+func startsWithLowerCase(str string) bool <span class="cov8" title="1">{
+        if len(str) == 0 </span><span class="cov0" title="0">{
+                return false
+        }</span>
+        <span class="cov8" title="1">c := str[0]
+        return 'a' &lt;= c &amp;&amp; c &lt;= 'z'</span>
+}
+
+// nextStdChunk finds the first occurrence of a std string in
+// layout and returns the text before, the std string, and the text after.
+func nextStdChunk(layout string) (prefix string, std int, suffix string) <span class="cov8" title="1">{
+        for i := 0; i &lt; len(layout); i++ </span><span class="cov8" title="1">{
+                switch c := int(layout[i]); c </span>{
+                <span class="cov8" title="1">case 'J': // January, Jan
+                        if len(layout) &gt;= i+3 &amp;&amp; layout[i:i+3] == "Jan" </span><span class="cov8" title="1">{
+                                if len(layout) &gt;= i+7 &amp;&amp; layout[i:i+7] == "January" </span><span class="cov8" title="1">{
+                                        return layout[0:i], stdLongMonth, layout[i+7:]
+                                }</span>
+                                <span class="cov8" title="1">if !startsWithLowerCase(layout[i+3:]) </span><span class="cov8" title="1">{
+                                        return layout[0:i], stdMonth, layout[i+3:]
+                                }</span>
+                        }
+
+                <span class="cov8" title="1">case 'M': // Monday, Mon, MST
+                        if len(layout) &gt;= i+3 </span><span class="cov8" title="1">{
+                                if layout[i:i+3] == "Mon" </span><span class="cov8" title="1">{
+                                        if len(layout) &gt;= i+6 &amp;&amp; layout[i:i+6] == "Monday" </span><span class="cov8" title="1">{
+                                                return layout[0:i], stdLongWeekDay, layout[i+6:]
+                                        }</span>
+                                        <span class="cov8" title="1">if !startsWithLowerCase(layout[i+3:]) </span><span class="cov8" title="1">{
+                                                return layout[0:i], stdWeekDay, layout[i+3:]
+                                        }</span>
+                                }
+                                <span class="cov8" title="1">if layout[i:i+3] == "MST" </span><span class="cov8" title="1">{
+                                        return layout[0:i], stdTZ, layout[i+3:]
+                                }</span>
+                        }
+
+                <span class="cov8" title="1">case '0': // 01, 02, 03, 04, 05, 06
+                        if len(layout) &gt;= i+2 &amp;&amp; '1' &lt;= layout[i+1] &amp;&amp; layout[i+1] &lt;= '6' </span><span class="cov8" title="1">{
+                                return layout[0:i], std0x[layout[i+1]-'1'], layout[i+2:]
+                        }</span>
+
+                <span class="cov8" title="1">case '1': // 15, 1
+                        if len(layout) &gt;= i+2 &amp;&amp; layout[i+1] == '5' </span><span class="cov8" title="1">{
+                                return layout[0:i], stdHour, layout[i+2:]
+                        }</span>
+                        <span class="cov0" title="0">return layout[0:i], stdNumMonth, layout[i+1:]</span>
+
+                <span class="cov8" title="1">case '2': // 2006, 2
+                        if len(layout) &gt;= i+4 &amp;&amp; layout[i:i+4] == "2006" </span><span class="cov8" title="1">{
+                                return layout[0:i], stdLongYear, layout[i+4:]
+                        }</span>
+                        <span class="cov8" title="1">return layout[0:i], stdDay, layout[i+1:]</span>
+
+                <span class="cov8" title="1">case '_': // _2
+                        if len(layout) &gt;= i+2 &amp;&amp; layout[i+1] == '2' </span><span class="cov8" title="1">{
+                                return layout[0:i], stdUnderDay, layout[i+2:]
+                        }</span>
+
+                <span class="cov8" title="1">case '3':
+                        return layout[0:i], stdHour12, layout[i+1:]</span>
+
+                <span class="cov0" title="0">case '4':
+                        return layout[0:i], stdMinute, layout[i+1:]</span>
+
+                <span class="cov0" title="0">case '5':
+                        return layout[0:i], stdSecond, layout[i+1:]</span>
+
+                <span class="cov8" title="1">case 'P': // PM
+                        if len(layout) &gt;= i+2 &amp;&amp; layout[i+1] == 'M' </span><span class="cov8" title="1">{
+                                return layout[0:i], stdPM, layout[i+2:]
+                        }</span>
+
+                <span class="cov8" title="1">case 'p': // pm
+                        if len(layout) &gt;= i+2 &amp;&amp; layout[i+1] == 'm' </span><span class="cov8" title="1">{
+                                return layout[0:i], stdpm, layout[i+2:]
+                        }</span>
+
+                <span class="cov8" title="1">case '-': // -070000, -07:00:00, -0700, -07:00, -07
+                        if len(layout) &gt;= i+7 &amp;&amp; layout[i:i+7] == "-070000" </span><span class="cov8" title="1">{
+                                return layout[0:i], stdNumSecondsTz, layout[i+7:]
+                        }</span>
+                        <span class="cov8" title="1">if len(layout) &gt;= i+9 &amp;&amp; layout[i:i+9] == "-07:00:00" </span><span class="cov8" title="1">{
+                                return layout[0:i], stdNumColonSecondsTZ, layout[i+9:]
+                        }</span>
+                        <span class="cov8" title="1">if len(layout) &gt;= i+5 &amp;&amp; layout[i:i+5] == "-0700" </span><span class="cov8" title="1">{
+                                return layout[0:i], stdNumTZ, layout[i+5:]
+                        }</span>
+                        <span class="cov8" title="1">if len(layout) &gt;= i+6 &amp;&amp; layout[i:i+6] == "-07:00" </span><span class="cov0" title="0">{
+                                return layout[0:i], stdNumColonTZ, layout[i+6:]
+                        }</span>
+                        <span class="cov8" title="1">if len(layout) &gt;= i+3 &amp;&amp; layout[i:i+3] == "-07" </span><span class="cov8" title="1">{
+                                return layout[0:i], stdNumShortTZ, layout[i+3:]
+                        }</span>
+
+                <span class="cov8" title="1">case 'Z': // Z070000, Z07:00:00, Z0700, Z07:00,
+                        if len(layout) &gt;= i+7 &amp;&amp; layout[i:i+7] == "Z070000" </span><span class="cov8" title="1">{
+                                return layout[0:i], stdISO8601SecondsTZ, layout[i+7:]
+                        }</span>
+                        <span class="cov8" title="1">if len(layout) &gt;= i+9 &amp;&amp; layout[i:i+9] == "Z07:00:00" </span><span class="cov8" title="1">{
+                                return layout[0:i], stdISO8601ColonSecondsTZ, layout[i+9:]
+                        }</span>
+                        <span class="cov8" title="1">if len(layout) &gt;= i+5 &amp;&amp; layout[i:i+5] == "Z0700" </span><span class="cov0" title="0">{
+                                return layout[0:i], stdISO8601TZ, layout[i+5:]
+                        }</span>
+                        <span class="cov8" title="1">if len(layout) &gt;= i+6 &amp;&amp; layout[i:i+6] == "Z07:00" </span><span class="cov8" title="1">{
+                                return layout[0:i], stdISO8601ColonTZ, layout[i+6:]
+                        }</span>
+
+                <span class="cov8" title="1">case '.': // .000 or .999 - repeated digits for fractional seconds.
+                        if i+1 &lt; len(layout) &amp;&amp; (layout[i+1] == '0' || layout[i+1] == '9') </span><span class="cov8" title="1">{
+                                ch := layout[i+1]
+                                j := i + 1
+                                for j &lt; len(layout) &amp;&amp; layout[j] == ch </span><span class="cov8" title="1">{
+                                        j++
+                                }</span>
+                                // String of digits must end here - only fractional second is all digits.
+                                <span class="cov8" title="1">if !isDigit(layout, j) </span><span class="cov8" title="1">{
+                                        std := stdFracSecond0
+                                        if layout[i+1] == '9' </span><span class="cov8" title="1">{
+                                                std = stdFracSecond9
+                                        }</span>
+                                        <span class="cov8" title="1">std |= (j - (i + 1)) &lt;&lt; stdArgShift
+                                        return layout[0:i], std, layout[j:]</span>
+                                }
+                        }
+                }
+        }
+        <span class="cov8" title="1">return layout, 0, ""</span>
+}
+
+var longDayNames = []string{
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+}
+
+var shortDayNames = []string{
+        "Sun",
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+}
+
+var shortMonthNames = []string{
+        "---",
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+}
+
+var longMonthNames = []string{
+        "---",
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+}
+
+// match returns true if s1 and s2 match ignoring case.
+// It is assumed s1 and s2 are the same length.
+func match(s1, s2 string) bool <span class="cov8" title="1">{
+        for i := 0; i &lt; len(s1); i++ </span><span class="cov8" title="1">{
+                c1 := s1[i]
+                c2 := s2[i]
+                if c1 != c2 </span><span class="cov8" title="1">{
+                        // Switch to lower-case; 'a'-'A' is known to be a single bit.
+                        c1 |= 'a' - 'A'
+                        c2 |= 'a' - 'A'
+                        if c1 != c2 || c1 &lt; 'a' || c1 &gt; 'z' </span><span class="cov8" title="1">{
+                                return false
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return true</span>
+}
+
+func lookup(tab []string, val string) (int, string, error) <span class="cov8" title="1">{
+        for i, v := range tab </span><span class="cov8" title="1">{
+                if len(val) &gt;= len(v) &amp;&amp; match(val[0:len(v)], v) </span><span class="cov8" title="1">{
+                        return i, val[len(v):], nil
+                }</span>
+        }
+        <span class="cov8" title="1">return -1, val, errBad</span>
+}
+
+// appendUint appends the decimal form of x to b and returns the result.
+// If x is a single-digit number and pad != 0, appendUint inserts the pad byte
+// before the digit.
+// Duplicates functionality in strconv, but avoids dependency.
+func appendUint(b []byte, x uint, pad byte) []byte <span class="cov8" title="1">{
+        if x &lt; 10 </span><span class="cov8" title="1">{
+                if pad != 0 </span><span class="cov8" title="1">{
+                        b = append(b, pad)
+                }</span>
+                <span class="cov8" title="1">return append(b, byte('0'+x))</span>
+        }
+        <span class="cov8" title="1">if x &lt; 100 </span><span class="cov8" title="1">{
+                b = append(b, byte('0'+x/10))
+                b = append(b, byte('0'+x%10))
+                return b
+        }</span>
+
+        <span class="cov8" title="1">var buf [32]byte
+        n := len(buf)
+        if x == 0 </span><span class="cov0" title="0">{
+                return append(b, '0')
+        }</span>
+        <span class="cov8" title="1">for x &gt;= 10 </span><span class="cov8" title="1">{
+                n--
+                buf[n] = byte(x%10 + '0')
+                x /= 10
+        }</span>
+        <span class="cov8" title="1">n--
+        buf[n] = byte(x + '0')
+        return append(b, buf[n:]...)</span>
+}
+
+// Never printed, just needs to be non-nil for return by atoi.
+var atoiError = errors.New("time: invalid number")
+
+// Duplicates functionality in strconv, but avoids dependency.
+func atoi(s string) (x int, err error) <span class="cov8" title="1">{
+        neg := false
+        if s != "" &amp;&amp; (s[0] == '-' || s[0] == '+') </span><span class="cov8" title="1">{
+                neg = s[0] == '-'
+                s = s[1:]
+        }</span>
+        <span class="cov8" title="1">q, rem, err := leadingInt(s)
+        x = int(q)
+        if err != nil || rem != "" </span><span class="cov8" title="1">{
+                return 0, atoiError
+        }</span>
+        <span class="cov8" title="1">if neg </span><span class="cov8" title="1">{
+                x = -x
+        }</span>
+        <span class="cov8" title="1">return x, nil</span>
+}
+
+// formatNano appends a fractional second, as nanoseconds, to b
+// and returns the result.
+func formatNano(b []byte, nanosec uint, n int, trim bool) []byte <span class="cov8" title="1">{
+        u := nanosec
+        var buf [9]byte
+        for start := len(buf); start &gt; 0; </span><span class="cov8" title="1">{
+                start--
+                buf[start] = byte(u%10 + '0')
+                u /= 10
+        }</span>
+
+        <span class="cov8" title="1">if n &gt; 9 </span><span class="cov0" title="0">{
+                n = 9
+        }</span>
+        <span class="cov8" title="1">if trim </span><span class="cov8" title="1">{
+                for n &gt; 0 &amp;&amp; buf[n-1] == '0' </span><span class="cov8" title="1">{
+                        n--
+                }</span>
+                <span class="cov8" title="1">if n == 0 </span><span class="cov8" title="1">{
+                        return b
+                }</span>
+        }
+        <span class="cov8" title="1">b = append(b, '.')
+        return append(b, buf[:n]...)</span>
+}
+
+// String returns the time formatted using the format string
+//        "2006-01-02 15:04:05.999999999 -0700 MST"
+func (t Time) String() string <span class="cov8" title="1">{
+        return t.Format("2006-01-02 15:04:05.999999999 -0700 MST")
+}</span>
+
+// Format returns a textual representation of the time value formatted
+// according to layout, which defines the format by showing how the reference
+// time, defined to be
+//        Mon Jan 2 15:04:05 -0700 MST 2006
+// would be displayed if it were the value; it serves as an example of the
+// desired output. The same display rules will then be applied to the time
+// value.
+// Predefined layouts ANSIC, UnixDate, RFC3339 and others describe standard
+// and convenient representations of the reference time. For more information
+// about the formats and the definition of the reference time, see the
+// documentation for ANSIC and the other constants defined by this package.
+func (t Time) Format(layout string) string <span class="cov8" title="1">{
+        var (
+                name, offset, abs = t.locabs()
+
+                year  int = -1
+                month Month
+                day   int
+                hour  int = -1
+                min   int
+                sec   int
+
+                b   []byte
+                buf [64]byte
+        )
+        max := len(layout) + 10
+        if max &lt;= len(buf) </span><span class="cov8" title="1">{
+                b = buf[:0]
+        }</span><span class="cov0" title="0"> else {
+                b = make([]byte, 0, max)
+        }</span>
+        // Each iteration generates one std value.
+        <span class="cov8" title="1">for layout != "" </span><span class="cov8" title="1">{
+                prefix, std, suffix := nextStdChunk(layout)
+                if prefix != "" </span><span class="cov8" title="1">{
+                        b = append(b, prefix...)
+                }</span>
+                <span class="cov8" title="1">if std == 0 </span><span class="cov8" title="1">{
+                        break</span>
+                }
+                <span class="cov8" title="1">layout = suffix
+
+                // Compute year, month, day if needed.
+                if year &lt; 0 &amp;&amp; std&amp;stdNeedDate != 0 </span><span class="cov8" title="1">{
+                        year, month, day, _ = absDate(abs, true)
+                }</span>
+
+                // Compute hour, minute, second if needed.
+                <span class="cov8" title="1">if hour &lt; 0 &amp;&amp; std&amp;stdNeedClock != 0 </span><span class="cov8" title="1">{
+                        hour, min, sec = absClock(abs)
+                }</span>
+
+                <span class="cov8" title="1">switch std &amp; stdMask </span>{
+                <span class="cov8" title="1">case stdYear:
+                        y := year
+                        if y &lt; 0 </span><span class="cov0" title="0">{
+                                y = -y
+                        }</span>
+                        <span class="cov8" title="1">b = appendUint(b, uint(y%100), '0')</span>
+                <span class="cov8" title="1">case stdLongYear:
+                        // Pad year to at least 4 digits.
+                        y := year
+                        switch </span>{
+                        <span class="cov8" title="1">case year &lt;= -1000:
+                                b = append(b, '-')
+                                y = -y</span>
+                        <span class="cov8" title="1">case year &lt;= -100:
+                                b = append(b, "-0"...)
+                                y = -y</span>
+                        <span class="cov8" title="1">case year &lt;= -10:
+                                b = append(b, "-00"...)
+                                y = -y</span>
+                        <span class="cov8" title="1">case year &lt; 0:
+                                b = append(b, "-000"...)
+                                y = -y</span>
+                        <span class="cov8" title="1">case year &lt; 10:
+                                b = append(b, "000"...)</span>
+                        <span class="cov8" title="1">case year &lt; 100:
+                                b = append(b, "00"...)</span>
+                        <span class="cov8" title="1">case year &lt; 1000:
+                                b = append(b, '0')</span>
+                        }
+                        <span class="cov8" title="1">b = appendUint(b, uint(y), 0)</span>
+                <span class="cov8" title="1">case stdMonth:
+                        b = append(b, month.String()[:3]...)</span>
+                <span class="cov8" title="1">case stdLongMonth:
+                        m := month.String()
+                        b = append(b, m...)</span>
+                <span class="cov0" title="0">case stdNumMonth:
+                        b = appendUint(b, uint(month), 0)</span>
+                <span class="cov8" title="1">case stdZeroMonth:
+                        b = appendUint(b, uint(month), '0')</span>
+                <span class="cov8" title="1">case stdWeekDay:
+                        b = append(b, absWeekday(abs).String()[:3]...)</span>
+                <span class="cov8" title="1">case stdLongWeekDay:
+                        s := absWeekday(abs).String()
+                        b = append(b, s...)</span>
+                <span class="cov8" title="1">case stdDay:
+                        b = appendUint(b, uint(day), 0)</span>
+                <span class="cov8" title="1">case stdUnderDay:
+                        b = appendUint(b, uint(day), ' ')</span>
+                <span class="cov8" title="1">case stdZeroDay:
+                        b = appendUint(b, uint(day), '0')</span>
+                <span class="cov8" title="1">case stdHour:
+                        b = appendUint(b, uint(hour), '0')</span>
+                <span class="cov8" title="1">case stdHour12:
+                        // Noon is 12PM, midnight is 12AM.
+                        hr := hour % 12
+                        if hr == 0 </span><span class="cov8" title="1">{
+                                hr = 12
+                        }</span>
+                        <span class="cov8" title="1">b = appendUint(b, uint(hr), 0)</span>
+                <span class="cov8" title="1">case stdZeroHour12:
+                        // Noon is 12PM, midnight is 12AM.
+                        hr := hour % 12
+                        if hr == 0 </span><span class="cov8" title="1">{
+                                hr = 12
+                        }</span>
+                        <span class="cov8" title="1">b = appendUint(b, uint(hr), '0')</span>
+                <span class="cov0" title="0">case stdMinute:
+                        b = appendUint(b, uint(min), 0)</span>
+                <span class="cov8" title="1">case stdZeroMinute:
+                        b = appendUint(b, uint(min), '0')</span>
+                <span class="cov0" title="0">case stdSecond:
+                        b = appendUint(b, uint(sec), 0)</span>
+                <span class="cov8" title="1">case stdZeroSecond:
+                        b = appendUint(b, uint(sec), '0')</span>
+                <span class="cov8" title="1">case stdPM:
+                        if hour &gt;= 12 </span><span class="cov8" title="1">{
+                                b = append(b, "PM"...)
+                        }</span><span class="cov8" title="1"> else {
+                                b = append(b, "AM"...)
+                        }</span>
+                <span class="cov8" title="1">case stdpm:
+                        if hour &gt;= 12 </span><span class="cov8" title="1">{
+                                b = append(b, "pm"...)
+                        }</span><span class="cov0" title="0"> else {
+                                b = append(b, "am"...)
+                        }</span>
+                <span class="cov8" title="1">case stdISO8601TZ, stdISO8601ColonTZ, stdISO8601SecondsTZ, stdISO8601ColonSecondsTZ, stdNumTZ, stdNumColonTZ, stdNumSecondsTz, stdNumColonSecondsTZ:
+                        // Ugly special case.  We cheat and take the "Z" variants
+                        // to mean "the time zone as formatted for ISO 8601".
+                        if offset == 0 &amp;&amp; (std == stdISO8601TZ || std == stdISO8601ColonTZ || std == stdISO8601SecondsTZ || std == stdISO8601ColonSecondsTZ) </span><span class="cov8" title="1">{
+                                b = append(b, 'Z')
+                                break</span>
+                        }
+                        <span class="cov8" title="1">zone := offset / 60 // convert to minutes
+                        absoffset := offset
+                        if zone &lt; 0 </span><span class="cov8" title="1">{
+                                b = append(b, '-')
+                                zone = -zone
+                                absoffset = -absoffset
+                        }</span><span class="cov8" title="1"> else {
+                                b = append(b, '+')
+                        }</span>
+                        <span class="cov8" title="1">b = appendUint(b, uint(zone/60), '0')
+                        if std == stdISO8601ColonTZ || std == stdNumColonTZ || std == stdISO8601ColonSecondsTZ || std == stdNumColonSecondsTZ </span><span class="cov8" title="1">{
+                                b = append(b, ':')
+                        }</span>
+                        <span class="cov8" title="1">b = appendUint(b, uint(zone%60), '0')
+
+                        // append seconds if appropriate
+                        if std == stdISO8601SecondsTZ || std == stdNumSecondsTz || std == stdNumColonSecondsTZ || std == stdISO8601ColonSecondsTZ </span><span class="cov8" title="1">{
+                                if std == stdNumColonSecondsTZ || std == stdISO8601ColonSecondsTZ </span><span class="cov8" title="1">{
+                                        b = append(b, ':')
+                                }</span>
+                                <span class="cov8" title="1">b = appendUint(b, uint(absoffset%60), '0')</span>
+                        }
+
+                <span class="cov8" title="1">case stdTZ:
+                        if name != "" </span><span class="cov8" title="1">{
+                                b = append(b, name...)
+                                break</span>
+                        }
+                        // No time zone known for this time, but we must print one.
+                        // Use the -0700 format.
+                        <span class="cov8" title="1">zone := offset / 60 // convert to minutes
+                        if zone &lt; 0 </span><span class="cov8" title="1">{
+                                b = append(b, '-')
+                                zone = -zone
+                        }</span><span class="cov0" title="0"> else {
+                                b = append(b, '+')
+                        }</span>
+                        <span class="cov8" title="1">b = appendUint(b, uint(zone/60), '0')
+                        b = appendUint(b, uint(zone%60), '0')</span>
+                <span class="cov8" title="1">case stdFracSecond0, stdFracSecond9:
+                        b = formatNano(b, uint(t.Nanosecond()), std&gt;&gt;stdArgShift, std&amp;stdMask == stdFracSecond9)</span>
+                }
+        }
+        <span class="cov8" title="1">return string(b)</span>
+}
+
+var errBad = errors.New("bad value for field") // placeholder not passed to user
+
+// ParseError describes a problem parsing a time string.
+type ParseError struct {
+        Layout     string
+        Value      string
+        LayoutElem string
+        ValueElem  string
+        Message    string
+}
+
+func quote(s string) string <span class="cov8" title="1">{
+        return "\"" + s + "\""
+}</span>
+
+// Error returns the string representation of a ParseError.
+func (e *ParseError) Error() string <span class="cov8" title="1">{
+        if e.Message == "" </span><span class="cov8" title="1">{
+                return "parsing time " +
+                        quote(e.Value) + " as " +
+                        quote(e.Layout) + ": cannot parse " +
+                        quote(e.ValueElem) + " as " +
+                        quote(e.LayoutElem)
+        }</span>
+        <span class="cov8" title="1">return "parsing time " +
+                quote(e.Value) + e.Message</span>
+}
+
+// isDigit returns true if s[i] is a decimal digit, false if not or
+// if s[i] is out of range.
+func isDigit(s string, i int) bool <span class="cov8" title="1">{
+        if len(s) &lt;= i </span><span class="cov8" title="1">{
+                return false
+        }</span>
+        <span class="cov8" title="1">c := s[i]
+        return '0' &lt;= c &amp;&amp; c &lt;= '9'</span>
+}
+
+// getnum parses s[0:1] or s[0:2] (fixed forces the latter)
+// as a decimal integer and returns the integer and the
+// remainder of the string.
+func getnum(s string, fixed bool) (int, string, error) <span class="cov8" title="1">{
+        if !isDigit(s, 0) </span><span class="cov0" title="0">{
+                return 0, s, errBad
+        }</span>
+        <span class="cov8" title="1">if !isDigit(s, 1) </span><span class="cov8" title="1">{
+                if fixed </span><span class="cov0" title="0">{
+                        return 0, s, errBad
+                }</span>
+                <span class="cov8" title="1">return int(s[0] - '0'), s[1:], nil</span>
+        }
+        <span class="cov8" title="1">return int(s[0]-'0')*10 + int(s[1]-'0'), s[2:], nil</span>
+}
+
+func cutspace(s string) string <span class="cov8" title="1">{
+        for len(s) &gt; 0 &amp;&amp; s[0] == ' ' </span><span class="cov8" title="1">{
+                s = s[1:]
+        }</span>
+        <span class="cov8" title="1">return s</span>
+}
+
+// skip removes the given prefix from value,
+// treating runs of space characters as equivalent.
+func skip(value, prefix string) (string, error) <span class="cov8" title="1">{
+        for len(prefix) &gt; 0 </span><span class="cov8" title="1">{
+                if prefix[0] == ' ' </span><span class="cov8" title="1">{
+                        if len(value) &gt; 0 &amp;&amp; value[0] != ' ' </span><span class="cov0" title="0">{
+                                return value, errBad
+                        }</span>
+                        <span class="cov8" title="1">prefix = cutspace(prefix)
+                        value = cutspace(value)
+                        continue</span>
+                }
+                <span class="cov8" title="1">if len(value) == 0 || value[0] != prefix[0] </span><span class="cov8" title="1">{
+                        return value, errBad
+                }</span>
+                <span class="cov8" title="1">prefix = prefix[1:]
+                value = value[1:]</span>
+        }
+        <span class="cov8" title="1">return value, nil</span>
+}
+
+// Parse parses a formatted string and returns the time value it represents.
+// The layout  defines the format by showing how the reference time,
+// defined to be
+//        Mon Jan 2 15:04:05 -0700 MST 2006
+// would be interpreted if it were the value; it serves as an example of
+// the input format. The same interpretation will then be made to the
+// input string.
+// Predefined layouts ANSIC, UnixDate, RFC3339 and others describe standard
+// and convenient representations of the reference time. For more information
+// about the formats and the definition of the reference time, see the
+// documentation for ANSIC and the other constants defined by this package.
+//
+// Elements omitted from the value are assumed to be zero or, when
+// zero is impossible, one, so parsing "3:04pm" returns the time
+// corresponding to Jan 1, year 0, 15:04:00 UTC (note that because the year is
+// 0, this time is before the zero Time).
+// Years must be in the range 0000..9999. The day of the week is checked
+// for syntax but it is otherwise ignored.
+//
+// In the absence of a time zone indicator, Parse returns a time in UTC.
+//
+// When parsing a time with a zone offset like -0700, if the offset corresponds
+// to a time zone used by the current location (Local), then Parse uses that
+// location and zone in the returned time. Otherwise it records the time as
+// being in a fabricated location with time fixed at the given zone offset.
+//
+// When parsing a time with a zone abbreviation like MST, if the zone abbreviation
+// has a defined offset in the current location, then that offset is used.
+// The zone abbreviation "UTC" is recognized as UTC regardless of location.
+// If the zone abbreviation is unknown, Parse records the time as being
+// in a fabricated location with the given zone abbreviation and a zero offset.
+// This choice means that such a time can be parsed and reformatted with the
+// same layout losslessly, but the exact instant used in the representation will
+// differ by the actual zone offset. To avoid such problems, prefer time layouts
+// that use a numeric zone offset, or use ParseInLocation.
+func Parse(layout, value string) (Time, error) <span class="cov8" title="1">{
+        return parse(layout, value, UTC, Local)
+}</span>
+
+// ParseInLocation is like Parse but differs in two important ways.
+// First, in the absence of time zone information, Parse interprets a time as UTC;
+// ParseInLocation interprets the time as in the given location.
+// Second, when given a zone offset or abbreviation, Parse tries to match it
+// against the Local location; ParseInLocation uses the given location.
+func ParseInLocation(layout, value string, loc *Location) (Time, error) <span class="cov8" title="1">{
+        return parse(layout, value, loc, loc)
+}</span>
+
+func parse(layout, value string, defaultLocation, local *Location) (Time, error) <span class="cov8" title="1">{
+        alayout, avalue := layout, value
+        rangeErrString := "" // set if a value is out of range
+        amSet := false       // do we need to subtract 12 from the hour for midnight?
+        pmSet := false       // do we need to add 12 to the hour?
+
+        // Time being constructed.
+        var (
+                year       int
+                month      int = 1 // January
+                day        int = 1
+                hour       int
+                min        int
+                sec        int
+                nsec       int
+                z          *Location
+                zoneOffset int = -1
+                zoneName   string
+        )
+
+        // Each iteration processes one std value.
+        for </span><span class="cov8" title="1">{
+                var err error
+                prefix, std, suffix := nextStdChunk(layout)
+                stdstr := layout[len(prefix) : len(layout)-len(suffix)]
+                value, err = skip(value, prefix)
+                if err != nil </span><span class="cov8" title="1">{
+                        return Time{}, &amp;ParseError{alayout, avalue, prefix, value, ""}
+                }</span>
+                <span class="cov8" title="1">if std == 0 </span><span class="cov8" title="1">{
+                        if len(value) != 0 </span><span class="cov8" title="1">{
+                                return Time{}, &amp;ParseError{alayout, avalue, "", value, ": extra text: " + value}
+                        }</span>
+                        <span class="cov8" title="1">break</span>
+                }
+                <span class="cov8" title="1">layout = suffix
+                var p string
+                switch std &amp; stdMask </span>{
+                <span class="cov8" title="1">case stdYear:
+                        if len(value) &lt; 2 </span><span class="cov0" title="0">{
+                                err = errBad
+                                break</span>
+                        }
+                        <span class="cov8" title="1">p, value = value[0:2], value[2:]
+                        year, err = atoi(p)
+                        if year &gt;= 69 </span><span class="cov0" title="0">{ // Unix time starts Dec 31 1969 in some time zones
+                                year += 1900
+                        }</span><span class="cov8" title="1"> else {
+                                year += 2000
+                        }</span>
+                <span class="cov8" title="1">case stdLongYear:
+                        if len(value) &lt; 4 || !isDigit(value, 0) </span><span class="cov8" title="1">{
+                                err = errBad
+                                break</span>
+                        }
+                        <span class="cov8" title="1">p, value = value[0:4], value[4:]
+                        year, err = atoi(p)</span>
+                <span class="cov8" title="1">case stdMonth:
+                        month, value, err = lookup(shortMonthNames, value)</span>
+                <span class="cov8" title="1">case stdLongMonth:
+                        month, value, err = lookup(longMonthNames, value)</span>
+                <span class="cov8" title="1">case stdNumMonth, stdZeroMonth:
+                        month, value, err = getnum(value, std == stdZeroMonth)
+                        if month &lt;= 0 || 12 &lt; month </span><span class="cov0" title="0">{
+                                rangeErrString = "month"
+                        }</span>
+                <span class="cov8" title="1">case stdWeekDay:
+                        // Ignore weekday except for error checking.
+                        _, value, err = lookup(shortDayNames, value)</span>
+                <span class="cov8" title="1">case stdLongWeekDay:
+                        _, value, err = lookup(longDayNames, value)</span>
+                <span class="cov8" title="1">case stdDay, stdUnderDay, stdZeroDay:
+                        if std == stdUnderDay &amp;&amp; len(value) &gt; 0 &amp;&amp; value[0] == ' ' </span><span class="cov0" title="0">{
+                                value = value[1:]
+                        }</span>
+                        <span class="cov8" title="1">day, value, err = getnum(value, std == stdZeroDay)
+                        if day &lt; 0 || 31 &lt; day </span><span class="cov0" title="0">{
+                                rangeErrString = "day"
+                        }</span>
+                <span class="cov8" title="1">case stdHour:
+                        hour, value, err = getnum(value, false)
+                        if hour &lt; 0 || 24 &lt;= hour </span><span class="cov8" title="1">{
+                                rangeErrString = "hour"
+                        }</span>
+                <span class="cov8" title="1">case stdHour12, stdZeroHour12:
+                        hour, value, err = getnum(value, std == stdZeroHour12)
+                        if hour &lt; 0 || 12 &lt; hour </span><span class="cov0" title="0">{
+                                rangeErrString = "hour"
+                        }</span>
+                <span class="cov8" title="1">case stdMinute, stdZeroMinute:
+                        min, value, err = getnum(value, std == stdZeroMinute)
+                        if min &lt; 0 || 60 &lt;= min </span><span class="cov8" title="1">{
+                                rangeErrString = "minute"
+                        }</span>
+                <span class="cov8" title="1">case stdSecond, stdZeroSecond:
+                        sec, value, err = getnum(value, std == stdZeroSecond)
+                        if sec &lt; 0 || 60 &lt;= sec </span><span class="cov8" title="1">{
+                                rangeErrString = "second"
+                        }</span>
+                        // Special case: do we have a fractional second but no
+                        // fractional second in the format?
+                        <span class="cov8" title="1">if len(value) &gt;= 2 &amp;&amp; value[0] == '.' &amp;&amp; isDigit(value, 1) </span><span class="cov8" title="1">{
+                                _, std, _ = nextStdChunk(layout)
+                                std &amp;= stdMask
+                                if std == stdFracSecond0 || std == stdFracSecond9 </span><span class="cov8" title="1">{
+                                        // Fractional second in the layout; proceed normally
+                                        break</span>
+                                }
+                                // No fractional second in the layout but we have one in the input.
+                                <span class="cov8" title="1">n := 2
+                                for ; n &lt; len(value) &amp;&amp; isDigit(value, n); n++ </span><span class="cov8" title="1">{
+                                }</span>
+                                <span class="cov8" title="1">nsec, rangeErrString, err = parseNanoseconds(value, n)
+                                value = value[n:]</span>
+                        }
+                <span class="cov8" title="1">case stdPM:
+                        if len(value) &lt; 2 </span><span class="cov0" title="0">{
+                                err = errBad
+                                break</span>
+                        }
+                        <span class="cov8" title="1">p, value = value[0:2], value[2:]
+                        switch p </span>{
+                        <span class="cov8" title="1">case "PM":
+                                pmSet = true</span>
+                        <span class="cov8" title="1">case "AM":
+                                amSet = true</span>
+                        <span class="cov0" title="0">default:
+                                err = errBad</span>
+                        }
+                <span class="cov8" title="1">case stdpm:
+                        if len(value) &lt; 2 </span><span class="cov0" title="0">{
+                                err = errBad
+                                break</span>
+                        }
+                        <span class="cov8" title="1">p, value = value[0:2], value[2:]
+                        switch p </span>{
+                        <span class="cov8" title="1">case "pm":
+                                pmSet = true</span>
+                        <span class="cov8" title="1">case "am":
+                                amSet = true</span>
+                        <span class="cov0" title="0">default:
+                                err = errBad</span>
+                        }
+                <span class="cov8" title="1">case stdISO8601TZ, stdISO8601ColonTZ, stdISO8601SecondsTZ, stdISO8601ColonSecondsTZ, stdNumTZ, stdNumShortTZ, stdNumColonTZ, stdNumSecondsTz, stdNumColonSecondsTZ:
+                        if (std == stdISO8601TZ || std == stdISO8601ColonTZ) &amp;&amp; len(value) &gt;= 1 &amp;&amp; value[0] == 'Z' </span><span class="cov8" title="1">{
+                                value = value[1:]
+                                z = UTC
+                                break</span>
+                        }
+                        <span class="cov8" title="1">var sign, hour, min, seconds string
+                        if std == stdISO8601ColonTZ || std == stdNumColonTZ </span><span class="cov8" title="1">{
+                                if len(value) &lt; 6 </span><span class="cov8" title="1">{
+                                        err = errBad
+                                        break</span>
+                                }
+                                <span class="cov8" title="1">if value[3] != ':' </span><span class="cov0" title="0">{
+                                        err = errBad
+                                        break</span>
+                                }
+                                <span class="cov8" title="1">sign, hour, min, seconds, value = value[0:1], value[1:3], value[4:6], "00", value[6:]</span>
+                        }<span class="cov8" title="1"> else if std == stdNumShortTZ </span><span class="cov8" title="1">{
+                                if len(value) &lt; 3 </span><span class="cov0" title="0">{
+                                        err = errBad
+                                        break</span>
+                                }
+                                <span class="cov8" title="1">sign, hour, min, seconds, value = value[0:1], value[1:3], "00", "00", value[3:]</span>
+                        }<span class="cov8" title="1"> else if std == stdISO8601ColonSecondsTZ || std == stdNumColonSecondsTZ </span><span class="cov8" title="1">{
+                                if len(value) &lt; 9 </span><span class="cov0" title="0">{
+                                        err = errBad
+                                        break</span>
+                                }
+                                <span class="cov8" title="1">if value[3] != ':' || value[6] != ':' </span><span class="cov0" title="0">{
+                                        err = errBad
+                                        break</span>
+                                }
+                                <span class="cov8" title="1">sign, hour, min, seconds, value = value[0:1], value[1:3], value[4:6], value[7:9], value[9:]</span>
+                        }<span class="cov8" title="1"> else if std == stdISO8601SecondsTZ || std == stdNumSecondsTz </span><span class="cov8" title="1">{
+                                if len(value) &lt; 7 </span><span class="cov0" title="0">{
+                                        err = errBad
+                                        break</span>
+                                }
+                                <span class="cov8" title="1">sign, hour, min, seconds, value = value[0:1], value[1:3], value[3:5], value[5:7], value[7:]</span>
+                        }<span class="cov8" title="1"> else {
+                                if len(value) &lt; 5 </span><span class="cov0" title="0">{
+                                        err = errBad
+                                        break</span>
+                                }
+                                <span class="cov8" title="1">sign, hour, min, seconds, value = value[0:1], value[1:3], value[3:5], "00", value[5:]</span>
+                        }
+                        <span class="cov8" title="1">var hr, mm, ss int
+                        hr, err = atoi(hour)
+                        if err == nil </span><span class="cov8" title="1">{
+                                mm, err = atoi(min)
+                        }</span>
+                        <span class="cov8" title="1">if err == nil </span><span class="cov8" title="1">{
+                                ss, err = atoi(seconds)
+                        }</span>
+                        <span class="cov8" title="1">zoneOffset = (hr*60+mm)*60 + ss // offset is in seconds
+                        switch sign[0] </span>{
+                        <span class="cov8" title="1">case '+':</span>
+                        <span class="cov8" title="1">case '-':
+                                zoneOffset = -zoneOffset</span>
+                        <span class="cov0" title="0">default:
+                                err = errBad</span>
+                        }
+                <span class="cov8" title="1">case stdTZ:
+                        // Does it look like a time zone?
+                        if len(value) &gt;= 3 &amp;&amp; value[0:3] == "UTC" </span><span class="cov0" title="0">{
+                                z = UTC
+                                value = value[3:]
+                                break</span>
+                        }
+                        <span class="cov8" title="1">n, ok := parseTimeZone(value)
+                        if !ok </span><span class="cov0" title="0">{
+                                err = errBad
+                                break</span>
+                        }
+                        <span class="cov8" title="1">zoneName, value = value[:n], value[n:]</span>
+
+                <span class="cov8" title="1">case stdFracSecond0:
+                        // stdFracSecond0 requires the exact number of digits as specified in
+                        // the layout.
+                        ndigit := 1 + (std &gt;&gt; stdArgShift)
+                        if len(value) &lt; ndigit </span><span class="cov8" title="1">{
+                                err = errBad
+                                break</span>
+                        }
+                        <span class="cov8" title="1">nsec, rangeErrString, err = parseNanoseconds(value, ndigit)
+                        value = value[ndigit:]</span>
+
+                <span class="cov8" title="1">case stdFracSecond9:
+                        if len(value) &lt; 2 || value[0] != '.' || value[1] &lt; '0' || '9' &lt; value[1] </span><span class="cov8" title="1">{
+                                // Fractional second omitted.
+                                break</span>
+                        }
+                        // Take any number of digits, even more than asked for,
+                        // because it is what the stdSecond case would do.
+                        <span class="cov8" title="1">i := 0
+                        for i &lt; 9 &amp;&amp; i+1 &lt; len(value) &amp;&amp; '0' &lt;= value[i+1] &amp;&amp; value[i+1] &lt;= '9' </span><span class="cov8" title="1">{
+                                i++
+                        }</span>
+                        <span class="cov8" title="1">nsec, rangeErrString, err = parseNanoseconds(value, 1+i)
+                        value = value[1+i:]</span>
+                }
+                <span class="cov8" title="1">if rangeErrString != "" </span><span class="cov8" title="1">{
+                        return Time{}, &amp;ParseError{alayout, avalue, stdstr, value, ": " + rangeErrString + " out of range"}
+                }</span>
+                <span class="cov8" title="1">if err != nil </span><span class="cov8" title="1">{
+                        return Time{}, &amp;ParseError{alayout, avalue, stdstr, value, ""}
+                }</span>
+        }
+        <span class="cov8" title="1">if pmSet &amp;&amp; hour &lt; 12 </span><span class="cov8" title="1">{
+                hour += 12
+        }</span><span class="cov8" title="1"> else if amSet &amp;&amp; hour == 12 </span><span class="cov8" title="1">{
+                hour = 0
+        }</span>
+
+        <span class="cov8" title="1">if z != nil </span><span class="cov8" title="1">{
+                return Date(year, Month(month), day, hour, min, sec, nsec, z), nil
+        }</span>
+
+        <span class="cov8" title="1">if zoneOffset != -1 </span><span class="cov8" title="1">{
+                t := Date(year, Month(month), day, hour, min, sec, nsec, UTC)
+                t.sec -= int64(zoneOffset)
+
+                // Look for local zone with the given offset.
+                // If that zone was in effect at the given time, use it.
+                name, offset, _, _, _ := local.lookup(t.sec + internalToUnix)
+                if offset == zoneOffset &amp;&amp; (zoneName == "" || name == zoneName) </span><span class="cov8" title="1">{
+                        t.loc = local
+                        return t, nil
+                }</span>
+
+                // Otherwise create fake zone to record offset.
+                <span class="cov8" title="1">t.loc = FixedZone(zoneName, zoneOffset)
+                return t, nil</span>
+        }
+
+        <span class="cov8" title="1">if zoneName != "" </span><span class="cov8" title="1">{
+                t := Date(year, Month(month), day, hour, min, sec, nsec, UTC)
+                // Look for local zone with the given offset.
+                // If that zone was in effect at the given time, use it.
+                offset, _, ok := local.lookupName(zoneName, t.sec+internalToUnix)
+                if ok </span><span class="cov8" title="1">{
+                        t.sec -= int64(offset)
+                        t.loc = local
+                        return t, nil
+                }</span>
+
+                // Otherwise, create fake zone with unknown offset.
+                <span class="cov8" title="1">if len(zoneName) &gt; 3 &amp;&amp; zoneName[:3] == "GMT" </span><span class="cov8" title="1">{
+                        offset, _ = atoi(zoneName[3:]) // Guaranteed OK by parseGMT.
+                        offset *= 3600
+                }</span>
+                <span class="cov8" title="1">t.loc = FixedZone(zoneName, offset)
+                return t, nil</span>
+        }
+
+        // Otherwise, fall back to default.
+        <span class="cov8" title="1">return Date(year, Month(month), day, hour, min, sec, nsec, defaultLocation), nil</span>
+}
+
+// parseTimeZone parses a time zone string and returns its length. Time zones
+// are human-generated and unpredictable. We can't do precise error checking.
+// On the other hand, for a correct parse there must be a time zone at the
+// beginning of the string, so it's almost always true that there's one
+// there. We look at the beginning of the string for a run of upper-case letters.
+// If there are more than 5, it's an error.
+// If there are 4 or 5 and the last is a T, it's a time zone.
+// If there are 3, it's a time zone.
+// Otherwise, other than special cases, it's not a time zone.
+// GMT is special because it can have an hour offset.
+func parseTimeZone(value string) (length int, ok bool) <span class="cov8" title="1">{
+        if len(value) &lt; 3 </span><span class="cov0" title="0">{
+                return 0, false
+        }</span>
+        // Special case 1: ChST and MeST are the only zones with a lower-case letter.
+        <span class="cov8" title="1">if len(value) &gt;= 4 &amp;&amp; (value[:4] == "ChST" || value[:4] == "MeST") </span><span class="cov8" title="1">{
+                return 4, true
+        }</span>
+        // Special case 2: GMT may have an hour offset; treat it specially.
+        <span class="cov8" title="1">if value[:3] == "GMT" </span><span class="cov8" title="1">{
+                length = parseGMT(value)
+                return length, true
+        }</span>
+        // How many upper-case letters are there? Need at least three, at most five.
+        <span class="cov8" title="1">var nUpper int
+        for nUpper = 0; nUpper &lt; 6; nUpper++ </span><span class="cov8" title="1">{
+                if nUpper &gt;= len(value) </span><span class="cov8" title="1">{
+                        break</span>
+                }
+                <span class="cov8" title="1">if c := value[nUpper]; c &lt; 'A' || 'Z' &lt; c </span><span class="cov8" title="1">{
+                        break</span>
+                }
+        }
+        <span class="cov8" title="1">switch nUpper </span>{
+        <span class="cov8" title="1">case 0, 1, 2, 6:
+                return 0, false</span>
+        <span class="cov8" title="1">case 5: // Must end in T to match.
+                if value[4] == 'T' </span><span class="cov8" title="1">{
+                        return 5, true
+                }</span>
+        <span class="cov8" title="1">case 4: // Must end in T to match.
+                if value[3] == 'T' </span><span class="cov8" title="1">{
+                        return 4, true
+                }</span>
+        <span class="cov8" title="1">case 3:
+                return 3, true</span>
+        }
+        <span class="cov8" title="1">return 0, false</span>
+}
+
+// parseGMT parses a GMT time zone. The input string is known to start "GMT".
+// The function checks whether that is followed by a sign and a number in the
+// range -14 through 12 excluding zero.
+func parseGMT(value string) int <span class="cov8" title="1">{
+        value = value[3:]
+        if len(value) == 0 </span><span class="cov0" title="0">{
+                return 3
+        }</span>
+        <span class="cov8" title="1">sign := value[0]
+        if sign != '-' &amp;&amp; sign != '+' </span><span class="cov8" title="1">{
+                return 3
+        }</span>
+        <span class="cov8" title="1">x, rem, err := leadingInt(value[1:])
+        if err != nil </span><span class="cov0" title="0">{
+                return 3
+        }</span>
+        <span class="cov8" title="1">if sign == '-' </span><span class="cov8" title="1">{
+                x = -x
+        }</span>
+        <span class="cov8" title="1">if x == 0 || x &lt; -14 || 12 &lt; x </span><span class="cov8" title="1">{
+                return 3
+        }</span>
+        <span class="cov8" title="1">return 3 + len(value) - len(rem)</span>
+}
+
+func parseNanoseconds(value string, nbytes int) (ns int, rangeErrString string, err error) <span class="cov8" title="1">{
+        if value[0] != '.' </span><span class="cov8" title="1">{
+                err = errBad
+                return
+        }</span>
+        <span class="cov8" title="1">if ns, err = atoi(value[1:nbytes]); err != nil </span><span class="cov8" title="1">{
+                return
+        }</span>
+        <span class="cov8" title="1">if ns &lt; 0 || 1e9 &lt;= ns </span><span class="cov8" title="1">{
+                rangeErrString = "fractional second"
+                return
+        }</span>
+        // We need nanoseconds, which means scaling by the number
+        // of missing digits in the format, maximum length 10. If it's
+        // longer than 10, we won't scale.
+        <span class="cov8" title="1">scaleDigits := 10 - nbytes
+        for i := 0; i &lt; scaleDigits; i++ </span><span class="cov8" title="1">{
+                ns *= 10
+        }</span>
+        <span class="cov8" title="1">return</span>
+}
+
+var errLeadingInt = errors.New("time: bad [0-9]*") // never printed
+
+// leadingInt consumes the leading [0-9]* from s.
+func leadingInt(s string) (x int64, rem string, err error) <span class="cov8" title="1">{
+        i := 0
+        for ; i &lt; len(s); i++ </span><span class="cov8" title="1">{
+                c := s[i]
+                if c &lt; '0' || c &gt; '9' </span><span class="cov8" title="1">{
+                        break</span>
+                }
+                <span class="cov8" title="1">if x &gt;= (1&lt;&lt;63-10)/10 </span><span class="cov0" title="0">{
+                        // overflow
+                        return 0, "", errLeadingInt
+                }</span>
+                <span class="cov8" title="1">x = x*10 + int64(c) - '0'</span>
+        }
+        <span class="cov8" title="1">return x, s[i:], nil</span>
+}
+
+var unitMap = map[string]float64{
+        "ns": float64(Nanosecond),
+        "us": float64(Microsecond),
+        "µs": float64(Microsecond), // U+00B5 = micro symbol
+        "μs": float64(Microsecond), // U+03BC = Greek letter mu
+        "ms": float64(Millisecond),
+        "s":  float64(Second),
+        "m":  float64(Minute),
+        "h":  float64(Hour),
+}
+
+// ParseDuration parses a duration string.
+// A duration string is a possibly signed sequence of
+// decimal numbers, each with optional fraction and a unit suffix,
+// such as "300ms", "-1.5h" or "2h45m".
+// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+func ParseDuration(s string) (Duration, error) <span class="cov8" title="1">{
+        // [-+]?([0-9]*(\.[0-9]*)?[a-z]+)+
+        orig := s
+        f := float64(0)
+        neg := false
+
+        // Consume [-+]?
+        if s != "" </span><span class="cov8" title="1">{
+                c := s[0]
+                if c == '-' || c == '+' </span><span class="cov8" title="1">{
+                        neg = c == '-'
+                        s = s[1:]
+                }</span>
+        }
+        // Special case: if all that is left is "0", this is zero.
+        <span class="cov8" title="1">if s == "0" </span><span class="cov8" title="1">{
+                return 0, nil
+        }</span>
+        <span class="cov8" title="1">if s == "" </span><span class="cov8" title="1">{
+                return 0, errors.New("time: invalid duration " + orig)
+        }</span>
+        <span class="cov8" title="1">for s != "" </span><span class="cov8" title="1">{
+                g := float64(0) // this element of the sequence
+
+                var x int64
+                var err error
+
+                // The next character must be [0-9.]
+                if !(s[0] == '.' || ('0' &lt;= s[0] &amp;&amp; s[0] &lt;= '9')) </span><span class="cov8" title="1">{
+                        return 0, errors.New("time: invalid duration " + orig)
+                }</span>
+                // Consume [0-9]*
+                <span class="cov8" title="1">pl := len(s)
+                x, s, err = leadingInt(s)
+                if err != nil </span><span class="cov0" title="0">{
+                        return 0, errors.New("time: invalid duration " + orig)
+                }</span>
+                <span class="cov8" title="1">g = float64(x)
+                pre := pl != len(s) // whether we consumed anything before a period
+
+                // Consume (\.[0-9]*)?
+                post := false
+                if s != "" &amp;&amp; s[0] == '.' </span><span class="cov8" title="1">{
+                        s = s[1:]
+                        pl := len(s)
+                        x, s, err = leadingInt(s)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return 0, errors.New("time: invalid duration " + orig)
+                        }</span>
+                        <span class="cov8" title="1">scale := 1.0
+                        for n := pl - len(s); n &gt; 0; n-- </span><span class="cov8" title="1">{
+                                scale *= 10
+                        }</span>
+                        <span class="cov8" title="1">g += float64(x) / scale
+                        post = pl != len(s)</span>
+                }
+                <span class="cov8" title="1">if !pre &amp;&amp; !post </span><span class="cov8" title="1">{
+                        // no digits (e.g. ".s" or "-.s")
+                        return 0, errors.New("time: invalid duration " + orig)
+                }</span>
+
+                // Consume unit.
+                <span class="cov8" title="1">i := 0
+                for ; i &lt; len(s); i++ </span><span class="cov8" title="1">{
+                        c := s[i]
+                        if c == '.' || ('0' &lt;= c &amp;&amp; c &lt;= '9') </span><span class="cov8" title="1">{
+                                break</span>
+                        }
+                }
+                <span class="cov8" title="1">if i == 0 </span><span class="cov8" title="1">{
+                        return 0, errors.New("time: missing unit in duration " + orig)
+                }</span>
+                <span class="cov8" title="1">u := s[:i]
+                s = s[i:]
+                unit, ok := unitMap[u]
+                if !ok </span><span class="cov0" title="0">{
+                        return 0, errors.New("time: unknown unit " + u + " in duration " + orig)
+                }</span>
+
+                <span class="cov8" title="1">f += g * unit</span>
+        }
+
+        <span class="cov8" title="1">if neg </span><span class="cov8" title="1">{
+                f = -f
+        }</span>
+        <span class="cov8" title="1">if f &lt; float64(-1&lt;&lt;63) || f &gt; float64(1&lt;&lt;63-1) </span><span class="cov8" title="1">{
+                return 0, errors.New("time: overflow parsing duration")
+        }</span>
+        <span class="cov8" title="1">return Duration(f), nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package time
+
+// Sleep pauses the current goroutine for at least the duration d.
+// A negative or zero duration causes Sleep to return immediately.
+func Sleep(d Duration)
+
+// runtimeNano returns the current value of the runtime clock in nanoseconds.
+func runtimeNano() int64
+
+// Interface to timers implemented in package runtime.
+// Must be in sync with ../runtime/runtime.h:/^struct.Timer$
+type runtimeTimer struct {
+        i      int
+        when   int64
+        period int64
+        f      func(interface{}, uintptr) // NOTE: must not be closure
+        arg    interface{}
+        seq    uintptr
+}
+
+// when is a helper function for setting the 'when' field of a runtimeTimer.
+// It returns what the time will be, in nanoseconds, Duration d in the future.
+// If d is negative, it is ignored.  If the returned value would be less than
+// zero because of an overflow, MaxInt64 is returned.
+func when(d Duration) int64 <span class="cov8" title="1">{
+        if d &lt;= 0 </span><span class="cov8" title="1">{
+                return runtimeNano()
+        }</span>
+        <span class="cov8" title="1">t := runtimeNano() + int64(d)
+        if t &lt; 0 </span><span class="cov8" title="1">{
+                t = 1&lt;&lt;63 - 1 // math.MaxInt64
+        }</span>
+        <span class="cov8" title="1">return t</span>
+}
+
+func startTimer(*runtimeTimer)
+func stopTimer(*runtimeTimer) bool
+
+// The Timer type represents a single event.
+// When the Timer expires, the current time will be sent on C,
+// unless the Timer was created by AfterFunc.
+// A Timer must be created with NewTimer or AfterFunc.
+type Timer struct {
+        C &lt;-chan Time
+        r runtimeTimer
+}
+
+// Stop prevents the Timer from firing.
+// It returns true if the call stops the timer, false if the timer has already
+// expired or been stopped.
+// Stop does not close the channel, to prevent a read from the channel succeeding
+// incorrectly.
+func (t *Timer) Stop() bool <span class="cov8" title="1">{
+        if t.r.f == nil </span><span class="cov8" title="1">{
+                panic("time: Stop called on uninitialized Timer")
+        }</span>
+        <span class="cov8" title="1">return stopTimer(&amp;t.r)</span>
+}
+
+// NewTimer creates a new Timer that will send
+// the current time on its channel after at least duration d.
+func NewTimer(d Duration) *Timer <span class="cov8" title="1">{
+        c := make(chan Time, 1)
+        t := &amp;Timer{
+                C: c,
+                r: runtimeTimer{
+                        when: when(d),
+                        f:    sendTime,
+                        arg:  c,
+                },
+        }
+        startTimer(&amp;t.r)
+        return t
+}</span>
+
+// Reset changes the timer to expire after duration d.
+// It returns true if the timer had been active, false if the timer had
+// expired or been stopped.
+func (t *Timer) Reset(d Duration) bool <span class="cov8" title="1">{
+        if t.r.f == nil </span><span class="cov8" title="1">{
+                panic("time: Reset called on uninitialized Timer")
+        }</span>
+        <span class="cov8" title="1">w := when(d)
+        active := stopTimer(&amp;t.r)
+        t.r.when = w
+        startTimer(&amp;t.r)
+        return active</span>
+}
+
+func sendTime(c interface{}, seq uintptr) <span class="cov8" title="1">{
+        // Non-blocking send of time on c.
+        // Used in NewTimer, it cannot block anyway (buffer).
+        // Used in NewTicker, dropping sends on the floor is
+        // the desired behavior when the reader gets behind,
+        // because the sends are periodic.
+        select </span>{
+        <span class="cov8" title="1">case c.(chan Time) &lt;- Now():</span>
+        <span class="cov0" title="0">default:</span>
+        }
+}
+
+// After waits for the duration to elapse and then sends the current time
+// on the returned channel.
+// It is equivalent to NewTimer(d).C.
+func After(d Duration) &lt;-chan Time <span class="cov8" title="1">{
+        return NewTimer(d).C
+}</span>
+
+// AfterFunc waits for the duration to elapse and then calls f
+// in its own goroutine. It returns a Timer that can
+// be used to cancel the call using its Stop method.
+func AfterFunc(d Duration, f func()) *Timer <span class="cov8" title="1">{
+        t := &amp;Timer{
+                r: runtimeTimer{
+                        when: when(d),
+                        f:    goFunc,
+                        arg:  f,
+                },
+        }
+        startTimer(&amp;t.r)
+        return t
+}</span>
+
+func goFunc(arg interface{}, seq uintptr) <span class="cov8" title="1">{
+        go arg.(func())()
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">// Copyright 2011 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// +build darwin dragonfly freebsd linux nacl netbsd openbsd solaris
+
+package time
+
+import (
+        "errors"
+        "syscall"
+)
+
+// for testing: whatever interrupts a sleep
+func interrupt() <span class="cov8" title="1">{
+        syscall.Kill(syscall.Getpid(), syscall.SIGCHLD)
+}</span>
+
+// readFile reads and returns the content of the named file.
+// It is a trivial implementation of ioutil.ReadFile, reimplemented
+// here to avoid depending on io/ioutil or os.
+func readFile(name string) ([]byte, error) <span class="cov8" title="1">{
+        f, err := syscall.Open(name, syscall.O_RDONLY, 0)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">defer syscall.Close(f)
+        var (
+                buf [4096]byte
+                ret []byte
+                n   int
+        )
+        for </span><span class="cov8" title="1">{
+                n, err = syscall.Read(f, buf[:])
+                if n &gt; 0 </span><span class="cov8" title="1">{
+                        ret = append(ret, buf[:n]...)
+                }</span>
+                <span class="cov8" title="1">if n == 0 || err != nil </span><span class="cov8" title="1">{
+                        break</span>
+                }
+        }
+        <span class="cov8" title="1">return ret, err</span>
+}
+
+func open(name string) (uintptr, error) <span class="cov8" title="1">{
+        fd, err := syscall.Open(name, syscall.O_RDONLY, 0)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+        <span class="cov8" title="1">return uintptr(fd), nil</span>
+}
+
+func closefd(fd uintptr) <span class="cov8" title="1">{
+        syscall.Close(int(fd))
+}</span>
+
+func preadn(fd uintptr, buf []byte, off int) error <span class="cov8" title="1">{
+        whence := 0
+        if off &lt; 0 </span><span class="cov8" title="1">{
+                whence = 2
+        }</span>
+        <span class="cov8" title="1">if _, err := syscall.Seek(int(fd), int64(off), whence); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">for len(buf) &gt; 0 </span><span class="cov8" title="1">{
+                m, err := syscall.Read(int(fd), buf)
+                if m &lt;= 0 </span><span class="cov0" title="0">{
+                        if err == nil </span><span class="cov0" title="0">{
+                                return errors.New("short read")
+                        }</span>
+                        <span class="cov0" title="0">return err</span>
+                }
+                <span class="cov8" title="1">buf = buf[m:]</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package time
+
+import "errors"
+
+// A Ticker holds a channel that delivers `ticks' of a clock
+// at intervals.
+type Ticker struct {
+        C &lt;-chan Time // The channel on which the ticks are delivered.
+        r runtimeTimer
+}
+
+// NewTicker returns a new Ticker containing a channel that will send the
+// time with a period specified by the duration argument.
+// It adjusts the intervals or drops ticks to make up for slow receivers.
+// The duration d must be greater than zero; if not, NewTicker will panic.
+// Stop the ticker to release associated resources.
+func NewTicker(d Duration) *Ticker <span class="cov8" title="1">{
+        if d &lt;= 0 </span><span class="cov8" title="1">{
+                panic(errors.New("non-positive interval for NewTicker"))
+        }</span>
+        // Give the channel a 1-element time buffer.
+        // If the client falls behind while reading, we drop ticks
+        // on the floor until the client catches up.
+        <span class="cov8" title="1">c := make(chan Time, 1)
+        t := &amp;Ticker{
+                C: c,
+                r: runtimeTimer{
+                        when:   when(d),
+                        period: int64(d),
+                        f:      sendTime,
+                        arg:    c,
+                },
+        }
+        startTimer(&amp;t.r)
+        return t</span>
+}
+
+// Stop turns off a ticker.  After Stop, no more ticks will be sent.
+// Stop does not close the channel, to prevent a read from the channel succeeding
+// incorrectly.
+func (t *Ticker) Stop() <span class="cov8" title="1">{
+        stopTimer(&amp;t.r)
+}</span>
+
+// Tick is a convenience wrapper for NewTicker providing access to the ticking
+// channel only.  Useful for clients that have no need to shut down the ticker.
+func Tick(d Duration) &lt;-chan Time <span class="cov8" title="1">{
+        if d &lt;= 0 </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov0" title="0">return NewTicker(d).C</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Package time provides functionality for measuring and displaying time.
+//
+// The calendrical calculations always assume a Gregorian calendar.
+package time
+
+import "errors"
+
+// A Time represents an instant in time with nanosecond precision.
+//
+// Programs using times should typically store and pass them as values,
+// not pointers.  That is, time variables and struct fields should be of
+// type time.Time, not *time.Time.  A Time value can be used by
+// multiple goroutines simultaneously.
+//
+// Time instants can be compared using the Before, After, and Equal methods.
+// The Sub method subtracts two instants, producing a Duration.
+// The Add method adds a Time and a Duration, producing a Time.
+//
+// The zero value of type Time is January 1, year 1, 00:00:00.000000000 UTC.
+// As this time is unlikely to come up in practice, the IsZero method gives
+// a simple way of detecting a time that has not been initialized explicitly.
+//
+// Each Time has associated with it a Location, consulted when computing the
+// presentation form of the time, such as in the Format, Hour, and Year methods.
+// The methods Local, UTC, and In return a Time with a specific location.
+// Changing the location in this way changes only the presentation; it does not
+// change the instant in time being denoted and therefore does not affect the
+// computations described in earlier paragraphs.
+//
+// Note that the Go == operator compares not just the time instant but also the
+// Location. Therefore, Time values should not be used as map or database keys
+// without first guaranteeing that the identical Location has been set for all
+// values, which can be achieved through use of the UTC or Local method.
+//
+type Time struct {
+        // sec gives the number of seconds elapsed since
+        // January 1, year 1 00:00:00 UTC.
+        sec int64
+
+        // nsec specifies a non-negative nanosecond
+        // offset within the second named by Seconds.
+        // It must be in the range [0, 999999999].
+        nsec int32
+
+        // loc specifies the Location that should be used to
+        // determine the minute, hour, month, day, and year
+        // that correspond to this Time.
+        // Only the zero Time has a nil Location.
+        // In that case it is interpreted to mean UTC.
+        loc *Location
+}
+
+// After reports whether the time instant t is after u.
+func (t Time) After(u Time) bool <span class="cov0" title="0">{
+        return t.sec &gt; u.sec || t.sec == u.sec &amp;&amp; t.nsec &gt; u.nsec
+}</span>
+
+// Before reports whether the time instant t is before u.
+func (t Time) Before(u Time) bool <span class="cov8" title="1">{
+        return t.sec &lt; u.sec || t.sec == u.sec &amp;&amp; t.nsec &lt; u.nsec
+}</span>
+
+// Equal reports whether t and u represent the same time instant.
+// Two times can be equal even if they are in different locations.
+// For example, 6:00 +0200 CEST and 4:00 UTC are Equal.
+// This comparison is different from using t == u, which also compares
+// the locations.
+func (t Time) Equal(u Time) bool <span class="cov8" title="1">{
+        return t.sec == u.sec &amp;&amp; t.nsec == u.nsec
+}</span>
+
+// A Month specifies a month of the year (January = 1, ...).
+type Month int
+
+const (
+        January Month = 1 + iota
+        February
+        March
+        April
+        May
+        June
+        July
+        August
+        September
+        October
+        November
+        December
+)
+
+var months = [...]string{
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+}
+
+// String returns the English name of the month ("January", "February", ...).
+func (m Month) String() string <span class="cov8" title="1">{ return months[m-1] }</span>
+
+// A Weekday specifies a day of the week (Sunday = 0, ...).
+type Weekday int
+
+const (
+        Sunday Weekday = iota
+        Monday
+        Tuesday
+        Wednesday
+        Thursday
+        Friday
+        Saturday
+)
+
+var days = [...]string{
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+}
+
+// String returns the English name of the day ("Sunday", "Monday", ...).
+func (d Weekday) String() string <span class="cov8" title="1">{ return days[d] }</span>
+
+// Computations on time.
+//
+// The zero value for a Time is defined to be
+//        January 1, year 1, 00:00:00.000000000 UTC
+// which (1) looks like a zero, or as close as you can get in a date
+// (1-1-1 00:00:00 UTC), (2) is unlikely enough to arise in practice to
+// be a suitable "not set" sentinel, unlike Jan 1 1970, and (3) has a
+// non-negative year even in time zones west of UTC, unlike 1-1-0
+// 00:00:00 UTC, which would be 12-31-(-1) 19:00:00 in New York.
+//
+// The zero Time value does not force a specific epoch for the time
+// representation.  For example, to use the Unix epoch internally, we
+// could define that to distinguish a zero value from Jan 1 1970, that
+// time would be represented by sec=-1, nsec=1e9.  However, it does
+// suggest a representation, namely using 1-1-1 00:00:00 UTC as the
+// epoch, and that's what we do.
+//
+// The Add and Sub computations are oblivious to the choice of epoch.
+//
+// The presentation computations - year, month, minute, and so on - all
+// rely heavily on division and modulus by positive constants.  For
+// calendrical calculations we want these divisions to round down, even
+// for negative values, so that the remainder is always positive, but
+// Go's division (like most hardware division instructions) rounds to
+// zero.  We can still do those computations and then adjust the result
+// for a negative numerator, but it's annoying to write the adjustment
+// over and over.  Instead, we can change to a different epoch so long
+// ago that all the times we care about will be positive, and then round
+// to zero and round down coincide.  These presentation routines already
+// have to add the zone offset, so adding the translation to the
+// alternate epoch is cheap.  For example, having a non-negative time t
+// means that we can write
+//
+//        sec = t % 60
+//
+// instead of
+//
+//        sec = t % 60
+//        if sec &lt; 0 {
+//                sec += 60
+//        }
+//
+// everywhere.
+//
+// The calendar runs on an exact 400 year cycle: a 400-year calendar
+// printed for 1970-2469 will apply as well to 2470-2869.  Even the days
+// of the week match up.  It simplifies the computations to choose the
+// cycle boundaries so that the exceptional years are always delayed as
+// long as possible.  That means choosing a year equal to 1 mod 400, so
+// that the first leap year is the 4th year, the first missed leap year
+// is the 100th year, and the missed missed leap year is the 400th year.
+// So we'd prefer instead to print a calendar for 2001-2400 and reuse it
+// for 2401-2800.
+//
+// Finally, it's convenient if the delta between the Unix epoch and
+// long-ago epoch is representable by an int64 constant.
+//
+// These three considerations—choose an epoch as early as possible, that
+// uses a year equal to 1 mod 400, and that is no more than 2⁶³ seconds
+// earlier than 1970—bring us to the year -292277022399.  We refer to
+// this year as the absolute zero year, and to times measured as a uint64
+// seconds since this year as absolute times.
+//
+// Times measured as an int64 seconds since the year 1—the representation
+// used for Time's sec field—are called internal times.
+//
+// Times measured as an int64 seconds since the year 1970 are called Unix
+// times.
+//
+// It is tempting to just use the year 1 as the absolute epoch, defining
+// that the routines are only valid for years &gt;= 1.  However, the
+// routines would then be invalid when displaying the epoch in time zones
+// west of UTC, since it is year 0.  It doesn't seem tenable to say that
+// printing the zero time correctly isn't supported in half the time
+// zones.  By comparison, it's reasonable to mishandle some times in
+// the year -292277022399.
+//
+// All this is opaque to clients of the API and can be changed if a
+// better implementation presents itself.
+
+const (
+        // The unsigned zero year for internal calculations.
+        // Must be 1 mod 400, and times before it will not compute correctly,
+        // but otherwise can be changed at will.
+        absoluteZeroYear = -292277022399
+
+        // The year of the zero Time.
+        // Assumed by the unixToInternal computation below.
+        internalYear = 1
+
+        // The year of the zero Unix time.
+        unixYear = 1970
+
+        // Offsets to convert between internal and absolute or Unix times.
+        absoluteToInternal int64 = (absoluteZeroYear - internalYear) * 365.2425 * secondsPerDay
+        internalToAbsolute       = -absoluteToInternal
+
+        unixToInternal int64 = (1969*365 + 1969/4 - 1969/100 + 1969/400) * secondsPerDay
+        internalToUnix int64 = -unixToInternal
+)
+
+// IsZero reports whether t represents the zero time instant,
+// January 1, year 1, 00:00:00 UTC.
+func (t Time) IsZero() bool <span class="cov0" title="0">{
+        return t.sec == 0 &amp;&amp; t.nsec == 0
+}</span>
+
+// abs returns the time t as an absolute time, adjusted by the zone offset.
+// It is called when computing a presentation property like Month or Hour.
+func (t Time) abs() uint64 <span class="cov8" title="1">{
+        l := t.loc
+        // Avoid function calls when possible.
+        if l == nil || l == &amp;localLoc </span><span class="cov8" title="1">{
+                l = l.get()
+        }</span>
+        <span class="cov8" title="1">sec := t.sec + internalToUnix
+        if l != &amp;utcLoc </span><span class="cov8" title="1">{
+                if l.cacheZone != nil &amp;&amp; l.cacheStart &lt;= sec &amp;&amp; sec &lt; l.cacheEnd </span><span class="cov8" title="1">{
+                        sec += int64(l.cacheZone.offset)
+                }</span><span class="cov8" title="1"> else {
+                        _, offset, _, _, _ := l.lookup(sec)
+                        sec += int64(offset)
+                }</span>
+        }
+        <span class="cov8" title="1">return uint64(sec + (unixToInternal + internalToAbsolute))</span>
+}
+
+// locabs is a combination of the Zone and abs methods,
+// extracting both return values from a single zone lookup.
+func (t Time) locabs() (name string, offset int, abs uint64) <span class="cov8" title="1">{
+        l := t.loc
+        if l == nil || l == &amp;localLoc </span><span class="cov8" title="1">{
+                l = l.get()
+        }</span>
+        // Avoid function call if we hit the local time cache.
+        <span class="cov8" title="1">sec := t.sec + internalToUnix
+        if l != &amp;utcLoc </span><span class="cov8" title="1">{
+                if l.cacheZone != nil &amp;&amp; l.cacheStart &lt;= sec &amp;&amp; sec &lt; l.cacheEnd </span><span class="cov8" title="1">{
+                        name = l.cacheZone.name
+                        offset = l.cacheZone.offset
+                }</span><span class="cov8" title="1"> else {
+                        name, offset, _, _, _ = l.lookup(sec)
+                }</span>
+                <span class="cov8" title="1">sec += int64(offset)</span>
+        }<span class="cov8" title="1"> else {
+                name = "UTC"
+        }</span>
+        <span class="cov8" title="1">abs = uint64(sec + (unixToInternal + internalToAbsolute))
+        return</span>
+}
+
+// Date returns the year, month, and day in which t occurs.
+func (t Time) Date() (year int, month Month, day int) <span class="cov8" title="1">{
+        year, month, day, _ = t.date(true)
+        return
+}</span>
+
+// Year returns the year in which t occurs.
+func (t Time) Year() int <span class="cov8" title="1">{
+        year, _, _, _ := t.date(false)
+        return year
+}</span>
+
+// Month returns the month of the year specified by t.
+func (t Time) Month() Month <span class="cov8" title="1">{
+        _, month, _, _ := t.date(true)
+        return month
+}</span>
+
+// Day returns the day of the month specified by t.
+func (t Time) Day() int <span class="cov8" title="1">{
+        _, _, day, _ := t.date(true)
+        return day
+}</span>
+
+// Weekday returns the day of the week specified by t.
+func (t Time) Weekday() Weekday <span class="cov8" title="1">{
+        return absWeekday(t.abs())
+}</span>
+
+// absWeekday is like Weekday but operates on an absolute time.
+func absWeekday(abs uint64) Weekday <span class="cov8" title="1">{
+        // January 1 of the absolute year, like January 1 of 2001, was a Monday.
+        sec := (abs + uint64(Monday)*secondsPerDay) % secondsPerWeek
+        return Weekday(int(sec) / secondsPerDay)
+}</span>
+
+// ISOWeek returns the ISO 8601 year and week number in which t occurs.
+// Week ranges from 1 to 53. Jan 01 to Jan 03 of year n might belong to
+// week 52 or 53 of year n-1, and Dec 29 to Dec 31 might belong to week 1
+// of year n+1.
+func (t Time) ISOWeek() (year, week int) <span class="cov8" title="1">{
+        year, month, day, yday := t.date(true)
+        wday := int(t.Weekday()+6) % 7 // weekday but Monday = 0.
+        const (
+                Mon int = iota
+                Tue
+                Wed
+                Thu
+                Fri
+                Sat
+                Sun
+        )
+
+        // Calculate week as number of Mondays in year up to
+        // and including today, plus 1 because the first week is week 0.
+        // Putting the + 1 inside the numerator as a + 7 keeps the
+        // numerator from being negative, which would cause it to
+        // round incorrectly.
+        week = (yday - wday + 7) / 7
+
+        // The week number is now correct under the assumption
+        // that the first Monday of the year is in week 1.
+        // If Jan 1 is a Tuesday, Wednesday, or Thursday, the first Monday
+        // is actually in week 2.
+        jan1wday := (wday - yday + 7*53) % 7
+        if Tue &lt;= jan1wday &amp;&amp; jan1wday &lt;= Thu </span><span class="cov8" title="1">{
+                week++
+        }</span>
+
+        // If the week number is still 0, we're in early January but in
+        // the last week of last year.
+        <span class="cov8" title="1">if week == 0 </span><span class="cov8" title="1">{
+                year--
+                week = 52
+                // A year has 53 weeks when Jan 1 or Dec 31 is a Thursday,
+                // meaning Jan 1 of the next year is a Friday
+                // or it was a leap year and Jan 1 of the next year is a Saturday.
+                if jan1wday == Fri || (jan1wday == Sat &amp;&amp; isLeap(year)) </span><span class="cov8" title="1">{
+                        week++
+                }</span>
+        }
+
+        // December 29 to 31 are in week 1 of next year if
+        // they are after the last Thursday of the year and
+        // December 31 is a Monday, Tuesday, or Wednesday.
+        <span class="cov8" title="1">if month == December &amp;&amp; day &gt;= 29 &amp;&amp; wday &lt; Thu </span><span class="cov8" title="1">{
+                if dec31wday := (wday + 31 - day) % 7; Mon &lt;= dec31wday &amp;&amp; dec31wday &lt;= Wed </span><span class="cov8" title="1">{
+                        year++
+                        week = 1
+                }</span>
+        }
+
+        <span class="cov8" title="1">return</span>
+}
+
+// Clock returns the hour, minute, and second within the day specified by t.
+func (t Time) Clock() (hour, min, sec int) <span class="cov8" title="1">{
+        return absClock(t.abs())
+}</span>
+
+// absClock is like clock but operates on an absolute time.
+func absClock(abs uint64) (hour, min, sec int) <span class="cov8" title="1">{
+        sec = int(abs % secondsPerDay)
+        hour = sec / secondsPerHour
+        sec -= hour * secondsPerHour
+        min = sec / secondsPerMinute
+        sec -= min * secondsPerMinute
+        return
+}</span>
+
+// Hour returns the hour within the day specified by t, in the range [0, 23].
+func (t Time) Hour() int <span class="cov8" title="1">{
+        return int(t.abs()%secondsPerDay) / secondsPerHour
+}</span>
+
+// Minute returns the minute offset within the hour specified by t, in the range [0, 59].
+func (t Time) Minute() int <span class="cov8" title="1">{
+        return int(t.abs()%secondsPerHour) / secondsPerMinute
+}</span>
+
+// Second returns the second offset within the minute specified by t, in the range [0, 59].
+func (t Time) Second() int <span class="cov8" title="1">{
+        return int(t.abs() % secondsPerMinute)
+}</span>
+
+// Nanosecond returns the nanosecond offset within the second specified by t,
+// in the range [0, 999999999].
+func (t Time) Nanosecond() int <span class="cov8" title="1">{
+        return int(t.nsec)
+}</span>
+
+// YearDay returns the day of the year specified by t, in the range [1,365] for non-leap years,
+// and [1,366] in leap years.
+func (t Time) YearDay() int <span class="cov8" title="1">{
+        _, _, _, yday := t.date(false)
+        return yday + 1
+}</span>
+
+// A Duration represents the elapsed time between two instants
+// as an int64 nanosecond count.  The representation limits the
+// largest representable duration to approximately 290 years.
+type Duration int64
+
+const (
+        minDuration Duration = -1 &lt;&lt; 63
+        maxDuration Duration = 1&lt;&lt;63 - 1
+)
+
+// Common durations.  There is no definition for units of Day or larger
+// to avoid confusion across daylight savings time zone transitions.
+//
+// To count the number of units in a Duration, divide:
+//        second := time.Second
+//        fmt.Print(int64(second/time.Millisecond)) // prints 1000
+//
+// To convert an integer number of units to a Duration, multiply:
+//        seconds := 10
+//        fmt.Print(time.Duration(seconds)*time.Second) // prints 10s
+//
+const (
+        Nanosecond  Duration = 1
+        Microsecond          = 1000 * Nanosecond
+        Millisecond          = 1000 * Microsecond
+        Second               = 1000 * Millisecond
+        Minute               = 60 * Second
+        Hour                 = 60 * Minute
+)
+
+// String returns a string representing the duration in the form "72h3m0.5s".
+// Leading zero units are omitted.  As a special case, durations less than one
+// second format use a smaller unit (milli-, micro-, or nanoseconds) to ensure
+// that the leading digit is non-zero.  The zero duration formats as 0,
+// with no unit.
+func (d Duration) String() string <span class="cov8" title="1">{
+        // Largest time is 2540400h10m10.000000000s
+        var buf [32]byte
+        w := len(buf)
+
+        u := uint64(d)
+        neg := d &lt; 0
+        if neg </span><span class="cov8" title="1">{
+                u = -u
+        }</span>
+
+        <span class="cov8" title="1">if u &lt; uint64(Second) </span><span class="cov8" title="1">{
+                // Special case: if duration is smaller than a second,
+                // use smaller units, like 1.2ms
+                var prec int
+                w--
+                buf[w] = 's'
+                w--
+                switch </span>{
+                <span class="cov8" title="1">case u == 0:
+                        return "0"</span>
+                <span class="cov8" title="1">case u &lt; uint64(Microsecond):
+                        // print nanoseconds
+                        prec = 0
+                        buf[w] = 'n'</span>
+                <span class="cov8" title="1">case u &lt; uint64(Millisecond):
+                        // print microseconds
+                        prec = 3
+                        // U+00B5 'µ' micro sign == 0xC2 0xB5
+                        w-- // Need room for two bytes.
+                        copy(buf[w:], "µ")</span>
+                <span class="cov8" title="1">default:
+                        // print milliseconds
+                        prec = 6
+                        buf[w] = 'm'</span>
+                }
+                <span class="cov8" title="1">w, u = fmtFrac(buf[:w], u, prec)
+                w = fmtInt(buf[:w], u)</span>
+        }<span class="cov8" title="1"> else {
+                w--
+                buf[w] = 's'
+
+                w, u = fmtFrac(buf[:w], u, 9)
+
+                // u is now integer seconds
+                w = fmtInt(buf[:w], u%60)
+                u /= 60
+
+                // u is now integer minutes
+                if u &gt; 0 </span><span class="cov8" title="1">{
+                        w--
+                        buf[w] = 'm'
+                        w = fmtInt(buf[:w], u%60)
+                        u /= 60
+
+                        // u is now integer hours
+                        // Stop at hours because days can be different lengths.
+                        if u &gt; 0 </span><span class="cov8" title="1">{
+                                w--
+                                buf[w] = 'h'
+                                w = fmtInt(buf[:w], u)
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">if neg </span><span class="cov8" title="1">{
+                w--
+                buf[w] = '-'
+        }</span>
+
+        <span class="cov8" title="1">return string(buf[w:])</span>
+}
+
+// fmtFrac formats the fraction of v/10**prec (e.g., ".12345") into the
+// tail of buf, omitting trailing zeros.  it omits the decimal
+// point too when the fraction is 0.  It returns the index where the
+// output bytes begin and the value v/10**prec.
+func fmtFrac(buf []byte, v uint64, prec int) (nw int, nv uint64) <span class="cov8" title="1">{
+        // Omit trailing zeros up to and including decimal point.
+        w := len(buf)
+        print := false
+        for i := 0; i &lt; prec; i++ </span><span class="cov8" title="1">{
+                digit := v % 10
+                print = print || digit != 0
+                if print </span><span class="cov8" title="1">{
+                        w--
+                        buf[w] = byte(digit) + '0'
+                }</span>
+                <span class="cov8" title="1">v /= 10</span>
+        }
+        <span class="cov8" title="1">if print </span><span class="cov8" title="1">{
+                w--
+                buf[w] = '.'
+        }</span>
+        <span class="cov8" title="1">return w, v</span>
+}
+
+// fmtInt formats v into the tail of buf.
+// It returns the index where the output begins.
+func fmtInt(buf []byte, v uint64) int <span class="cov8" title="1">{
+        w := len(buf)
+        if v == 0 </span><span class="cov8" title="1">{
+                w--
+                buf[w] = '0'
+        }</span><span class="cov8" title="1"> else {
+                for v &gt; 0 </span><span class="cov8" title="1">{
+                        w--
+                        buf[w] = byte(v%10) + '0'
+                        v /= 10
+                }</span>
+        }
+        <span class="cov8" title="1">return w</span>
+}
+
+// Nanoseconds returns the duration as an integer nanosecond count.
+func (d Duration) Nanoseconds() int64 <span class="cov8" title="1">{ return int64(d) }</span>
+
+// These methods return float64 because the dominant
+// use case is for printing a floating point number like 1.5s, and
+// a truncation to integer would make them not useful in those cases.
+// Splitting the integer and fraction ourselves guarantees that
+// converting the returned float64 to an integer rounds the same
+// way that a pure integer conversion would have, even in cases
+// where, say, float64(d.Nanoseconds())/1e9 would have rounded
+// differently.
+
+// Seconds returns the duration as a floating point number of seconds.
+func (d Duration) Seconds() float64 <span class="cov8" title="1">{
+        sec := d / Second
+        nsec := d % Second
+        return float64(sec) + float64(nsec)*1e-9
+}</span>
+
+// Minutes returns the duration as a floating point number of minutes.
+func (d Duration) Minutes() float64 <span class="cov8" title="1">{
+        min := d / Minute
+        nsec := d % Minute
+        return float64(min) + float64(nsec)*(1e-9/60)
+}</span>
+
+// Hours returns the duration as a floating point number of hours.
+func (d Duration) Hours() float64 <span class="cov8" title="1">{
+        hour := d / Hour
+        nsec := d % Hour
+        return float64(hour) + float64(nsec)*(1e-9/60/60)
+}</span>
+
+// Add returns the time t+d.
+func (t Time) Add(d Duration) Time <span class="cov8" title="1">{
+        t.sec += int64(d / 1e9)
+        nsec := int32(t.nsec) + int32(d%1e9)
+        if nsec &gt;= 1e9 </span><span class="cov8" title="1">{
+                t.sec++
+                nsec -= 1e9
+        }</span><span class="cov8" title="1"> else if nsec &lt; 0 </span><span class="cov8" title="1">{
+                t.sec--
+                nsec += 1e9
+        }</span>
+        <span class="cov8" title="1">t.nsec = nsec
+        return t</span>
+}
+
+// Sub returns the duration t-u. If the result exceeds the maximum (or minimum)
+// value that can be stored in a Duration, the maximum (or minimum) duration
+// will be returned.
+// To compute t-d for a duration d, use t.Add(-d).
+func (t Time) Sub(u Time) Duration <span class="cov8" title="1">{
+        d := Duration(t.sec-u.sec)*Second + Duration(int32(t.nsec)-int32(u.nsec))
+        // Check for overflow or underflow.
+        switch </span>{
+        <span class="cov8" title="1">case u.Add(d).Equal(t):
+                return d</span> // d is correct
+        <span class="cov8" title="1">case t.Before(u):
+                return minDuration</span> // t - u is negative out of range
+        <span class="cov8" title="1">default:
+                return maxDuration</span> // t - u is positive out of range
+        }
+}
+
+// Since returns the time elapsed since t.
+// It is shorthand for time.Now().Sub(t).
+func Since(t Time) Duration <span class="cov0" title="0">{
+        return Now().Sub(t)
+}</span>
+
+// AddDate returns the time corresponding to adding the
+// given number of years, months, and days to t.
+// For example, AddDate(-1, 2, 3) applied to January 1, 2011
+// returns March 4, 2010.
+//
+// AddDate normalizes its result in the same way that Date does,
+// so, for example, adding one month to October 31 yields
+// December 1, the normalized form for November 31.
+func (t Time) AddDate(years int, months int, days int) Time <span class="cov8" title="1">{
+        year, month, day := t.Date()
+        hour, min, sec := t.Clock()
+        return Date(year+years, month+Month(months), day+days, hour, min, sec, int(t.nsec), t.loc)
+}</span>
+
+const (
+        secondsPerMinute = 60
+        secondsPerHour   = 60 * 60
+        secondsPerDay    = 24 * secondsPerHour
+        secondsPerWeek   = 7 * secondsPerDay
+        daysPer400Years  = 365*400 + 97
+        daysPer100Years  = 365*100 + 24
+        daysPer4Years    = 365*4 + 1
+)
+
+// date computes the year, day of year, and when full=true,
+// the month and day in which t occurs.
+func (t Time) date(full bool) (year int, month Month, day int, yday int) <span class="cov8" title="1">{
+        return absDate(t.abs(), full)
+}</span>
+
+// absDate is like date but operates on an absolute time.
+func absDate(abs uint64, full bool) (year int, month Month, day int, yday int) <span class="cov8" title="1">{
+        // Split into time and day.
+        d := abs / secondsPerDay
+
+        // Account for 400 year cycles.
+        n := d / daysPer400Years
+        y := 400 * n
+        d -= daysPer400Years * n
+
+        // Cut off 100-year cycles.
+        // The last cycle has one extra leap year, so on the last day
+        // of that year, day / daysPer100Years will be 4 instead of 3.
+        // Cut it back down to 3 by subtracting n&gt;&gt;2.
+        n = d / daysPer100Years
+        n -= n &gt;&gt; 2
+        y += 100 * n
+        d -= daysPer100Years * n
+
+        // Cut off 4-year cycles.
+        // The last cycle has a missing leap year, which does not
+        // affect the computation.
+        n = d / daysPer4Years
+        y += 4 * n
+        d -= daysPer4Years * n
+
+        // Cut off years within a 4-year cycle.
+        // The last year is a leap year, so on the last day of that year,
+        // day / 365 will be 4 instead of 3.  Cut it back down to 3
+        // by subtracting n&gt;&gt;2.
+        n = d / 365
+        n -= n &gt;&gt; 2
+        y += n
+        d -= 365 * n
+
+        year = int(int64(y) + absoluteZeroYear)
+        yday = int(d)
+
+        if !full </span><span class="cov8" title="1">{
+                return
+        }</span>
+
+        <span class="cov8" title="1">day = yday
+        if isLeap(year) </span><span class="cov8" title="1">{
+                // Leap year
+                switch </span>{
+                <span class="cov8" title="1">case day &gt; 31+29-1:
+                        // After leap day; pretend it wasn't there.
+                        day--</span>
+                <span class="cov8" title="1">case day == 31+29-1:
+                        // Leap day.
+                        month = February
+                        day = 29
+                        return</span>
+                }
+        }
+
+        // Estimate month on assumption that every month has 31 days.
+        // The estimate may be too low by at most one month, so adjust.
+        <span class="cov8" title="1">month = Month(day / 31)
+        end := int(daysBefore[month+1])
+        var begin int
+        if day &gt;= end </span><span class="cov8" title="1">{
+                month++
+                begin = end
+        }</span><span class="cov8" title="1"> else {
+                begin = int(daysBefore[month])
+        }</span>
+
+        <span class="cov8" title="1">month++ // because January is 1
+        day = day - begin + 1
+        return</span>
+}
+
+// daysBefore[m] counts the number of days in a non-leap year
+// before month m begins.  There is an entry for m=12, counting
+// the number of days before January of next year (365).
+var daysBefore = [...]int32{
+        0,
+        31,
+        31 + 28,
+        31 + 28 + 31,
+        31 + 28 + 31 + 30,
+        31 + 28 + 31 + 30 + 31,
+        31 + 28 + 31 + 30 + 31 + 30,
+        31 + 28 + 31 + 30 + 31 + 30 + 31,
+        31 + 28 + 31 + 30 + 31 + 30 + 31 + 31,
+        31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30,
+        31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31,
+        31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30,
+        31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30 + 31,
+}
+
+func daysIn(m Month, year int) int <span class="cov8" title="1">{
+        if m == February &amp;&amp; isLeap(year) </span><span class="cov8" title="1">{
+                return 29
+        }</span>
+        <span class="cov8" title="1">return int(daysBefore[m] - daysBefore[m-1])</span>
+}
+
+// Provided by package runtime.
+func now() (sec int64, nsec int32)
+
+// Now returns the current local time.
+func Now() Time <span class="cov8" title="1">{
+        sec, nsec := now()
+        return Time{sec + unixToInternal, nsec, Local}
+}</span>
+
+// UTC returns t with the location set to UTC.
+func (t Time) UTC() Time <span class="cov8" title="1">{
+        t.loc = UTC
+        return t
+}</span>
+
+// Local returns t with the location set to local time.
+func (t Time) Local() Time <span class="cov8" title="1">{
+        t.loc = Local
+        return t
+}</span>
+
+// In returns t with the location information set to loc.
+//
+// In panics if loc is nil.
+func (t Time) In(loc *Location) Time <span class="cov8" title="1">{
+        if loc == nil </span><span class="cov0" title="0">{
+                panic("time: missing Location in call to Time.In")
+        }</span>
+        <span class="cov8" title="1">t.loc = loc
+        return t</span>
+}
+
+// Location returns the time zone information associated with t.
+func (t Time) Location() *Location <span class="cov8" title="1">{
+        l := t.loc
+        if l == nil </span><span class="cov8" title="1">{
+                l = UTC
+        }</span>
+        <span class="cov8" title="1">return l</span>
+}
+
+// Zone computes the time zone in effect at time t, returning the abbreviated
+// name of the zone (such as "CET") and its offset in seconds east of UTC.
+func (t Time) Zone() (name string, offset int) <span class="cov8" title="1">{
+        name, offset, _, _, _ = t.loc.lookup(t.sec + internalToUnix)
+        return
+}</span>
+
+// Unix returns t as a Unix time, the number of seconds elapsed
+// since January 1, 1970 UTC.
+func (t Time) Unix() int64 <span class="cov8" title="1">{
+        return t.sec + internalToUnix
+}</span>
+
+// UnixNano returns t as a Unix time, the number of nanoseconds elapsed
+// since January 1, 1970 UTC. The result is undefined if the Unix time
+// in nanoseconds cannot be represented by an int64. Note that this
+// means the result of calling UnixNano on the zero Time is undefined.
+func (t Time) UnixNano() int64 <span class="cov8" title="1">{
+        return (t.sec+internalToUnix)*1e9 + int64(t.nsec)
+}</span>
+
+const timeBinaryVersion byte = 1
+
+// MarshalBinary implements the encoding.BinaryMarshaler interface.
+func (t Time) MarshalBinary() ([]byte, error) <span class="cov8" title="1">{
+        var offsetMin int16 // minutes east of UTC. -1 is UTC.
+
+        if t.Location() == &amp;utcLoc </span><span class="cov8" title="1">{
+                offsetMin = -1
+        }</span><span class="cov8" title="1"> else {
+                _, offset := t.Zone()
+                if offset%60 != 0 </span><span class="cov8" title="1">{
+                        return nil, errors.New("Time.MarshalBinary: zone offset has fractional minute")
+                }</span>
+                <span class="cov8" title="1">offset /= 60
+                if offset &lt; -32768 || offset == -1 || offset &gt; 32767 </span><span class="cov8" title="1">{
+                        return nil, errors.New("Time.MarshalBinary: unexpected zone offset")
+                }</span>
+                <span class="cov8" title="1">offsetMin = int16(offset)</span>
+        }
+
+        <span class="cov8" title="1">enc := []byte{
+                timeBinaryVersion, // byte 0 : version
+                byte(t.sec &gt;&gt; 56), // bytes 1-8: seconds
+                byte(t.sec &gt;&gt; 48),
+                byte(t.sec &gt;&gt; 40),
+                byte(t.sec &gt;&gt; 32),
+                byte(t.sec &gt;&gt; 24),
+                byte(t.sec &gt;&gt; 16),
+                byte(t.sec &gt;&gt; 8),
+                byte(t.sec),
+                byte(t.nsec &gt;&gt; 24), // bytes 9-12: nanoseconds
+                byte(t.nsec &gt;&gt; 16),
+                byte(t.nsec &gt;&gt; 8),
+                byte(t.nsec),
+                byte(offsetMin &gt;&gt; 8), // bytes 13-14: zone offset in minutes
+                byte(offsetMin),
+        }
+
+        return enc, nil</span>
+}
+
+// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
+func (t *Time) UnmarshalBinary(data []byte) error <span class="cov8" title="1">{
+        buf := data
+        if len(buf) == 0 </span><span class="cov8" title="1">{
+                return errors.New("Time.UnmarshalBinary: no data")
+        }</span>
+
+        <span class="cov8" title="1">if buf[0] != timeBinaryVersion </span><span class="cov8" title="1">{
+                return errors.New("Time.UnmarshalBinary: unsupported version")
+        }</span>
+
+        <span class="cov8" title="1">if len(buf) != /*version*/ 1+ /*sec*/ 8+ /*nsec*/ 4+ /*zone offset*/ 2 </span><span class="cov8" title="1">{
+                return errors.New("Time.UnmarshalBinary: invalid length")
+        }</span>
+
+        <span class="cov8" title="1">buf = buf[1:]
+        t.sec = int64(buf[7]) | int64(buf[6])&lt;&lt;8 | int64(buf[5])&lt;&lt;16 | int64(buf[4])&lt;&lt;24 |
+                int64(buf[3])&lt;&lt;32 | int64(buf[2])&lt;&lt;40 | int64(buf[1])&lt;&lt;48 | int64(buf[0])&lt;&lt;56
+
+        buf = buf[8:]
+        t.nsec = int32(buf[3]) | int32(buf[2])&lt;&lt;8 | int32(buf[1])&lt;&lt;16 | int32(buf[0])&lt;&lt;24
+
+        buf = buf[4:]
+        offset := int(int16(buf[1])|int16(buf[0])&lt;&lt;8) * 60
+
+        if offset == -1*60 </span><span class="cov8" title="1">{
+                t.loc = &amp;utcLoc
+        }</span><span class="cov8" title="1"> else if _, localoff, _, _, _ := Local.lookup(t.sec + internalToUnix); offset == localoff </span><span class="cov8" title="1">{
+                t.loc = Local
+        }</span><span class="cov8" title="1"> else {
+                t.loc = FixedZone("", offset)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// TODO(rsc): Remove GobEncoder, GobDecoder, MarshalJSON, UnmarshalJSON in Go 2.
+// The same semantics will be provided by the generic MarshalBinary, MarshalText,
+// UnmarshalBinary, UnmarshalText.
+
+// GobEncode implements the gob.GobEncoder interface.
+func (t Time) GobEncode() ([]byte, error) <span class="cov8" title="1">{
+        return t.MarshalBinary()
+}</span>
+
+// GobDecode implements the gob.GobDecoder interface.
+func (t *Time) GobDecode(data []byte) error <span class="cov8" title="1">{
+        return t.UnmarshalBinary(data)
+}</span>
+
+// MarshalJSON implements the json.Marshaler interface.
+// The time is a quoted string in RFC 3339 format, with sub-second precision added if present.
+func (t Time) MarshalJSON() ([]byte, error) <span class="cov8" title="1">{
+        if y := t.Year(); y &lt; 0 || y &gt;= 10000 </span><span class="cov8" title="1">{
+                // RFC 3339 is clear that years are 4 digits exactly.
+                // See golang.org/issue/4556#c15 for more discussion.
+                return nil, errors.New("Time.MarshalJSON: year outside of range [0,9999]")
+        }</span>
+        <span class="cov8" title="1">return []byte(t.Format(`"` + RFC3339Nano + `"`)), nil</span>
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// The time is expected to be a quoted string in RFC 3339 format.
+func (t *Time) UnmarshalJSON(data []byte) (err error) <span class="cov8" title="1">{
+        // Fractional seconds are handled implicitly by Parse.
+        *t, err = Parse(`"`+RFC3339+`"`, string(data))
+        return
+}</span>
+
+// MarshalText implements the encoding.TextMarshaler interface.
+// The time is formatted in RFC 3339 format, with sub-second precision added if present.
+func (t Time) MarshalText() ([]byte, error) <span class="cov0" title="0">{
+        if y := t.Year(); y &lt; 0 || y &gt;= 10000 </span><span class="cov0" title="0">{
+                return nil, errors.New("Time.MarshalText: year outside of range [0,9999]")
+        }</span>
+        <span class="cov0" title="0">return []byte(t.Format(RFC3339Nano)), nil</span>
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+// The time is expected to be in RFC 3339 format.
+func (t *Time) UnmarshalText(data []byte) (err error) <span class="cov0" title="0">{
+        // Fractional seconds are handled implicitly by Parse.
+        *t, err = Parse(RFC3339, string(data))
+        return
+}</span>
+
+// Unix returns the local Time corresponding to the given Unix time,
+// sec seconds and nsec nanoseconds since January 1, 1970 UTC.
+// It is valid to pass nsec outside the range [0, 999999999].
+func Unix(sec int64, nsec int64) Time <span class="cov8" title="1">{
+        if nsec &lt; 0 || nsec &gt;= 1e9 </span><span class="cov8" title="1">{
+                n := nsec / 1e9
+                sec += n
+                nsec -= n * 1e9
+                if nsec &lt; 0 </span><span class="cov8" title="1">{
+                        nsec += 1e9
+                        sec--
+                }</span>
+        }
+        <span class="cov8" title="1">return Time{sec + unixToInternal, int32(nsec), Local}</span>
+}
+
+func isLeap(year int) bool <span class="cov8" title="1">{
+        return year%4 == 0 &amp;&amp; (year%100 != 0 || year%400 == 0)
+}</span>
+
+// norm returns nhi, nlo such that
+//        hi * base + lo == nhi * base + nlo
+//        0 &lt;= nlo &lt; base
+func norm(hi, lo, base int) (nhi, nlo int) <span class="cov8" title="1">{
+        if lo &lt; 0 </span><span class="cov8" title="1">{
+                n := (-lo-1)/base + 1
+                hi -= n
+                lo += n * base
+        }</span>
+        <span class="cov8" title="1">if lo &gt;= base </span><span class="cov8" title="1">{
+                n := lo / base
+                hi += n
+                lo -= n * base
+        }</span>
+        <span class="cov8" title="1">return hi, lo</span>
+}
+
+// Date returns the Time corresponding to
+//        yyyy-mm-dd hh:mm:ss + nsec nanoseconds
+// in the appropriate zone for that time in the given location.
+//
+// The month, day, hour, min, sec, and nsec values may be outside
+// their usual ranges and will be normalized during the conversion.
+// For example, October 32 converts to November 1.
+//
+// A daylight savings time transition skips or repeats times.
+// For example, in the United States, March 13, 2011 2:15am never occurred,
+// while November 6, 2011 1:15am occurred twice.  In such cases, the
+// choice of time zone, and therefore the time, is not well-defined.
+// Date returns a time that is correct in one of the two zones involved
+// in the transition, but it does not guarantee which.
+//
+// Date panics if loc is nil.
+func Date(year int, month Month, day, hour, min, sec, nsec int, loc *Location) Time <span class="cov8" title="1">{
+        if loc == nil </span><span class="cov0" title="0">{
+                panic("time: missing Location in call to Date")
+        }</span>
+
+        // Normalize month, overflowing into year.
+        <span class="cov8" title="1">m := int(month) - 1
+        year, m = norm(year, m, 12)
+        month = Month(m) + 1
+
+        // Normalize nsec, sec, min, hour, overflowing into day.
+        sec, nsec = norm(sec, nsec, 1e9)
+        min, sec = norm(min, sec, 60)
+        hour, min = norm(hour, min, 60)
+        day, hour = norm(day, hour, 24)
+
+        y := uint64(int64(year) - absoluteZeroYear)
+
+        // Compute days since the absolute epoch.
+
+        // Add in days from 400-year cycles.
+        n := y / 400
+        y -= 400 * n
+        d := daysPer400Years * n
+
+        // Add in 100-year cycles.
+        n = y / 100
+        y -= 100 * n
+        d += daysPer100Years * n
+
+        // Add in 4-year cycles.
+        n = y / 4
+        y -= 4 * n
+        d += daysPer4Years * n
+
+        // Add in non-leap years.
+        n = y
+        d += 365 * n
+
+        // Add in days before this month.
+        d += uint64(daysBefore[month-1])
+        if isLeap(year) &amp;&amp; month &gt;= March </span><span class="cov8" title="1">{
+                d++ // February 29
+        }</span>
+
+        // Add in days before today.
+        <span class="cov8" title="1">d += uint64(day - 1)
+
+        // Add in time elapsed today.
+        abs := d * secondsPerDay
+        abs += uint64(hour*secondsPerHour + min*secondsPerMinute + sec)
+
+        unix := int64(abs) + (absoluteToInternal + internalToUnix)
+
+        // Look for zone offset for t, so we can adjust to UTC.
+        // The lookup function expects UTC, so we pass t in the
+        // hope that it will not be too close to a zone transition,
+        // and then adjust if it is.
+        _, offset, _, start, end := loc.lookup(unix)
+        if offset != 0 </span><span class="cov8" title="1">{
+                switch utc := unix - int64(offset); </span>{
+                <span class="cov0" title="0">case utc &lt; start:
+                        _, offset, _, _, _ = loc.lookup(start - 1)</span>
+                <span class="cov8" title="1">case utc &gt;= end:
+                        _, offset, _, _, _ = loc.lookup(end)</span>
+                }
+                <span class="cov8" title="1">unix -= int64(offset)</span>
+        }
+
+        <span class="cov8" title="1">return Time{unix + unixToInternal, int32(nsec), loc}</span>
+}
+
+// Truncate returns the result of rounding t down to a multiple of d (since the zero time).
+// If d &lt;= 0, Truncate returns t unchanged.
+func (t Time) Truncate(d Duration) Time <span class="cov8" title="1">{
+        if d &lt;= 0 </span><span class="cov0" title="0">{
+                return t
+        }</span>
+        <span class="cov8" title="1">_, r := div(t, d)
+        return t.Add(-r)</span>
+}
+
+// Round returns the result of rounding t to the nearest multiple of d (since the zero time).
+// The rounding behavior for halfway values is to round up.
+// If d &lt;= 0, Round returns t unchanged.
+func (t Time) Round(d Duration) Time <span class="cov8" title="1">{
+        if d &lt;= 0 </span><span class="cov0" title="0">{
+                return t
+        }</span>
+        <span class="cov8" title="1">_, r := div(t, d)
+        if r+r &lt; d </span><span class="cov8" title="1">{
+                return t.Add(-r)
+        }</span>
+        <span class="cov8" title="1">return t.Add(d - r)</span>
+}
+
+// div divides t by d and returns the quotient parity and remainder.
+// We don't use the quotient parity anymore (round half up instead of round to even)
+// but it's still here in case we change our minds.
+func div(t Time, d Duration) (qmod2 int, r Duration) <span class="cov8" title="1">{
+        neg := false
+        nsec := int32(t.nsec)
+        if t.sec &lt; 0 </span><span class="cov8" title="1">{
+                // Operate on absolute value.
+                neg = true
+                t.sec = -t.sec
+                nsec = -nsec
+                if nsec &lt; 0 </span><span class="cov8" title="1">{
+                        nsec += 1e9
+                        t.sec-- // t.sec &gt;= 1 before the -- so safe
+                }</span>
+        }
+
+        <span class="cov8" title="1">switch </span>{
+        // Special case: 2d divides 1 second.
+        <span class="cov8" title="1">case d &lt; Second &amp;&amp; Second%(d+d) == 0:
+                qmod2 = int(nsec/int32(d)) &amp; 1
+                r = Duration(nsec % int32(d))</span>
+
+        // Special case: d is a multiple of 1 second.
+        <span class="cov8" title="1">case d%Second == 0:
+                d1 := int64(d / Second)
+                qmod2 = int(t.sec/d1) &amp; 1
+                r = Duration(t.sec%d1)*Second + Duration(nsec)</span>
+
+        // General case.
+        // This could be faster if more cleverness were applied,
+        // but it's really only here to avoid special case restrictions in the API.
+        // No one will care about these cases.
+        <span class="cov8" title="1">default:
+                // Compute nanoseconds as 128-bit number.
+                sec := uint64(t.sec)
+                tmp := (sec &gt;&gt; 32) * 1e9
+                u1 := tmp &gt;&gt; 32
+                u0 := tmp &lt;&lt; 32
+                tmp = uint64(sec&amp;0xFFFFFFFF) * 1e9
+                u0x, u0 := u0, u0+tmp
+                if u0 &lt; u0x </span><span class="cov8" title="1">{
+                        u1++
+                }</span>
+                <span class="cov8" title="1">u0x, u0 = u0, u0+uint64(nsec)
+                if u0 &lt; u0x </span><span class="cov0" title="0">{
+                        u1++
+                }</span>
+
+                // Compute remainder by subtracting r&lt;&lt;k for decreasing k.
+                // Quotient parity is whether we subtract on last round.
+                <span class="cov8" title="1">d1 := uint64(d)
+                for d1&gt;&gt;63 != 1 </span><span class="cov8" title="1">{
+                        d1 &lt;&lt;= 1
+                }</span>
+                <span class="cov8" title="1">d0 := uint64(0)
+                for </span><span class="cov8" title="1">{
+                        qmod2 = 0
+                        if u1 &gt; d1 || u1 == d1 &amp;&amp; u0 &gt;= d0 </span><span class="cov8" title="1">{
+                                // subtract
+                                qmod2 = 1
+                                u0x, u0 = u0, u0-d0
+                                if u0 &gt; u0x </span><span class="cov8" title="1">{
+                                        u1--
+                                }</span>
+                                <span class="cov8" title="1">u1 -= d1</span>
+                        }
+                        <span class="cov8" title="1">if d1 == 0 &amp;&amp; d0 == uint64(d) </span><span class="cov8" title="1">{
+                                break</span>
+                        }
+                        <span class="cov8" title="1">d0 &gt;&gt;= 1
+                        d0 |= (d1 &amp; 1) &lt;&lt; 63
+                        d1 &gt;&gt;= 1</span>
+                }
+                <span class="cov8" title="1">r = Duration(u0)</span>
+        }
+
+        <span class="cov8" title="1">if neg &amp;&amp; r != 0 </span><span class="cov8" title="1">{
+                // If input was negative and not an exact multiple of d, we computed q, r such that
+                //        q*d + r = -t
+                // But the right answers are given by -(q-1), d-r:
+                //        q*d + r = -t
+                //        -q*d - r = t
+                //        -(q-1)*d + (d - r) = t
+                qmod2 ^= 1
+                r = d - r
+        }</span>
+        <span class="cov8" title="1">return</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">// Copyright 2011 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package time
+
+import (
+        "sync"
+        "syscall"
+)
+
+// A Location maps time instants to the zone in use at that time.
+// Typically, the Location represents the collection of time offsets
+// in use in a geographical area, such as CEST and CET for central Europe.
+type Location struct {
+        name string
+        zone []zone
+        tx   []zoneTrans
+
+        // Most lookups will be for the current time.
+        // To avoid the binary search through tx, keep a
+        // static one-element cache that gives the correct
+        // zone for the time when the Location was created.
+        // if cacheStart &lt;= t &lt;= cacheEnd,
+        // lookup can return cacheZone.
+        // The units for cacheStart and cacheEnd are seconds
+        // since January 1, 1970 UTC, to match the argument
+        // to lookup.
+        cacheStart int64
+        cacheEnd   int64
+        cacheZone  *zone
+}
+
+// A zone represents a single time zone such as CEST or CET.
+type zone struct {
+        name   string // abbreviated name, "CET"
+        offset int    // seconds east of UTC
+        isDST  bool   // is this zone Daylight Savings Time?
+}
+
+// A zoneTrans represents a single time zone transition.
+type zoneTrans struct {
+        when         int64 // transition time, in seconds since 1970 GMT
+        index        uint8 // the index of the zone that goes into effect at that time
+        isstd, isutc bool  // ignored - no idea what these mean
+}
+
+// alpha and omega are the beginning and end of time for zone
+// transitions.
+const (
+        alpha = -1 &lt;&lt; 63  // math.MinInt64
+        omega = 1&lt;&lt;63 - 1 // math.MaxInt64
+)
+
+// UTC represents Universal Coordinated Time (UTC).
+var UTC *Location = &amp;utcLoc
+
+// utcLoc is separate so that get can refer to &amp;utcLoc
+// and ensure that it never returns a nil *Location,
+// even if a badly behaved client has changed UTC.
+var utcLoc = Location{name: "UTC"}
+
+// Local represents the system's local time zone.
+var Local *Location = &amp;localLoc
+
+// localLoc is separate so that initLocal can initialize
+// it even if a client has changed Local.
+var localLoc Location
+var localOnce sync.Once
+
+func (l *Location) get() *Location <span class="cov8" title="1">{
+        if l == nil </span><span class="cov8" title="1">{
+                return &amp;utcLoc
+        }</span>
+        <span class="cov8" title="1">if l == &amp;localLoc </span><span class="cov8" title="1">{
+                localOnce.Do(initLocal)
+        }</span>
+        <span class="cov8" title="1">return l</span>
+}
+
+// String returns a descriptive name for the time zone information,
+// corresponding to the argument to LoadLocation.
+func (l *Location) String() string <span class="cov0" title="0">{
+        return l.get().name
+}</span>
+
+// FixedZone returns a Location that always uses
+// the given zone name and offset (seconds east of UTC).
+func FixedZone(name string, offset int) *Location <span class="cov8" title="1">{
+        l := &amp;Location{
+                name:       name,
+                zone:       []zone{{name, offset, false}},
+                tx:         []zoneTrans{{alpha, 0, false, false}},
+                cacheStart: alpha,
+                cacheEnd:   omega,
+        }
+        l.cacheZone = &amp;l.zone[0]
+        return l
+}</span>
+
+// lookup returns information about the time zone in use at an
+// instant in time expressed as seconds since January 1, 1970 00:00:00 UTC.
+//
+// The returned information gives the name of the zone (such as "CET"),
+// the start and end times bracketing sec when that zone is in effect,
+// the offset in seconds east of UTC (such as -5*60*60), and whether
+// the daylight savings is being observed at that time.
+func (l *Location) lookup(sec int64) (name string, offset int, isDST bool, start, end int64) <span class="cov8" title="1">{
+        l = l.get()
+
+        if len(l.zone) == 0 </span><span class="cov8" title="1">{
+                name = "UTC"
+                offset = 0
+                isDST = false
+                start = alpha
+                end = omega
+                return
+        }</span>
+
+        <span class="cov8" title="1">if zone := l.cacheZone; zone != nil &amp;&amp; l.cacheStart &lt;= sec &amp;&amp; sec &lt; l.cacheEnd </span><span class="cov8" title="1">{
+                name = zone.name
+                offset = zone.offset
+                isDST = zone.isDST
+                start = l.cacheStart
+                end = l.cacheEnd
+                return
+        }</span>
+
+        <span class="cov8" title="1">if len(l.tx) == 0 || sec &lt; l.tx[0].when </span><span class="cov8" title="1">{
+                zone := &amp;l.zone[l.lookupFirstZone()]
+                name = zone.name
+                offset = zone.offset
+                isDST = zone.isDST
+                start = alpha
+                if len(l.tx) &gt; 0 </span><span class="cov8" title="1">{
+                        end = l.tx[0].when
+                }</span><span class="cov0" title="0"> else {
+                        end = omega
+                }</span>
+                <span class="cov8" title="1">return</span>
+        }
+
+        // Binary search for entry with largest time &lt;= sec.
+        // Not using sort.Search to avoid dependencies.
+        <span class="cov8" title="1">tx := l.tx
+        end = omega
+        lo := 0
+        hi := len(tx)
+        for hi-lo &gt; 1 </span><span class="cov8" title="1">{
+                m := lo + (hi-lo)/2
+                lim := tx[m].when
+                if sec &lt; lim </span><span class="cov8" title="1">{
+                        end = lim
+                        hi = m
+                }</span><span class="cov8" title="1"> else {
+                        lo = m
+                }</span>
+        }
+        <span class="cov8" title="1">zone := &amp;l.zone[tx[lo].index]
+        name = zone.name
+        offset = zone.offset
+        isDST = zone.isDST
+        start = tx[lo].when
+        // end = maintained during the search
+        return</span>
+}
+
+// lookupFirstZone returns the index of the time zone to use for times
+// before the first transition time, or when there are no transition
+// times.
+//
+// The reference implementation in localtime.c from
+// http://www.iana.org/time-zones/repository/releases/tzcode2013g.tar.gz
+// implements the following algorithm for these cases:
+// 1) If the first zone is unused by the transitions, use it.
+// 2) Otherwise, if there are transition times, and the first
+//    transition is to a zone in daylight time, find the first
+//    non-daylight-time zone before and closest to the first transition
+//    zone.
+// 3) Otherwise, use the first zone that is not daylight time, if
+//    there is one.
+// 4) Otherwise, use the first zone.
+func (l *Location) lookupFirstZone() int <span class="cov8" title="1">{
+        // Case 1.
+        if !l.firstZoneUsed() </span><span class="cov8" title="1">{
+                return 0
+        }</span>
+
+        // Case 2.
+        <span class="cov8" title="1">if len(l.tx) &gt; 0 &amp;&amp; l.zone[l.tx[0].index].isDST </span><span class="cov8" title="1">{
+                for zi := int(l.tx[0].index) - 1; zi &gt;= 0; zi-- </span><span class="cov0" title="0">{
+                        if !l.zone[zi].isDST </span><span class="cov0" title="0">{
+                                return zi
+                        }</span>
+                }
+        }
+
+        // Case 3.
+        <span class="cov8" title="1">for zi := range l.zone </span><span class="cov8" title="1">{
+                if !l.zone[zi].isDST </span><span class="cov8" title="1">{
+                        return zi
+                }</span>
+        }
+
+        // Case 4.
+        <span class="cov0" title="0">return 0</span>
+}
+
+// firstZoneUsed returns whether the first zone is used by some
+// transition.
+func (l *Location) firstZoneUsed() bool <span class="cov8" title="1">{
+        for _, tx := range l.tx </span><span class="cov8" title="1">{
+                if tx.index == 0 </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+// lookupName returns information about the time zone with
+// the given name (such as "EST") at the given pseudo-Unix time
+// (what the given time of day would be in UTC).
+func (l *Location) lookupName(name string, unix int64) (offset int, isDST bool, ok bool) <span class="cov8" title="1">{
+        l = l.get()
+
+        // First try for a zone with the right name that was actually
+        // in effect at the given time. (In Sydney, Australia, both standard
+        // and daylight-savings time are abbreviated "EST". Using the
+        // offset helps us pick the right one for the given time.
+        // It's not perfect: during the backward transition we might pick
+        // either one.)
+        for i := range l.zone </span><span class="cov8" title="1">{
+                zone := &amp;l.zone[i]
+                if zone.name == name </span><span class="cov8" title="1">{
+                        nam, offset, isDST, _, _ := l.lookup(unix - int64(zone.offset))
+                        if nam == zone.name </span><span class="cov8" title="1">{
+                                return offset, isDST, true
+                        }</span>
+                }
+        }
+
+        // Otherwise fall back to an ordinary name match.
+        <span class="cov8" title="1">for i := range l.zone </span><span class="cov8" title="1">{
+                zone := &amp;l.zone[i]
+                if zone.name == name </span><span class="cov8" title="1">{
+                        return zone.offset, zone.isDST, true
+                }</span>
+        }
+
+        // Otherwise, give up.
+        <span class="cov8" title="1">return</span>
+}
+
+// NOTE(rsc): Eventually we will need to accept the POSIX TZ environment
+// syntax too, but I don't feel like implementing it today.
+
+var zoneinfo, _ = syscall.Getenv("ZONEINFO")
+
+// LoadLocation returns the Location with the given name.
+//
+// If the name is "" or "UTC", LoadLocation returns UTC.
+// If the name is "Local", LoadLocation returns Local.
+//
+// Otherwise, the name is taken to be a location name corresponding to a file
+// in the IANA Time Zone database, such as "America/New_York".
+//
+// The time zone database needed by LoadLocation may not be
+// present on all systems, especially non-Unix systems.
+// LoadLocation looks in the directory or uncompressed zip file
+// named by the ZONEINFO environment variable, if any, then looks in
+// known installation locations on Unix systems,
+// and finally looks in $GOROOT/lib/time/zoneinfo.zip.
+func LoadLocation(name string) (*Location, error) <span class="cov8" title="1">{
+        if name == "" || name == "UTC" </span><span class="cov0" title="0">{
+                return UTC, nil
+        }</span>
+        <span class="cov8" title="1">if name == "Local" </span><span class="cov0" title="0">{
+                return Local, nil
+        }</span>
+        <span class="cov8" title="1">if zoneinfo != "" </span><span class="cov0" title="0">{
+                if z, err := loadZoneFile(zoneinfo, name); err == nil </span><span class="cov0" title="0">{
+                        z.name = name
+                        return z, nil
+                }</span>
+        }
+        <span class="cov8" title="1">return loadLocation(name)</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Parse "zoneinfo" time zone file.
+// This is a fairly standard file format used on OS X, Linux, BSD, Sun, and others.
+// See tzfile(5), http://en.wikipedia.org/wiki/Zoneinfo,
+// and ftp://munnari.oz.au/pub/oldtz/
+
+package time
+
+import "errors"
+
+// Simple I/O interface to binary blob of data.
+type data struct {
+        p     []byte
+        error bool
+}
+
+func (d *data) read(n int) []byte <span class="cov8" title="1">{
+        if len(d.p) &lt; n </span><span class="cov0" title="0">{
+                d.p = nil
+                d.error = true
+                return nil
+        }</span>
+        <span class="cov8" title="1">p := d.p[0:n]
+        d.p = d.p[n:]
+        return p</span>
+}
+
+func (d *data) big4() (n uint32, ok bool) <span class="cov8" title="1">{
+        p := d.read(4)
+        if len(p) &lt; 4 </span><span class="cov0" title="0">{
+                d.error = true
+                return 0, false
+        }</span>
+        <span class="cov8" title="1">return uint32(p[0])&lt;&lt;24 | uint32(p[1])&lt;&lt;16 | uint32(p[2])&lt;&lt;8 | uint32(p[3]), true</span>
+}
+
+func (d *data) byte() (n byte, ok bool) <span class="cov8" title="1">{
+        p := d.read(1)
+        if len(p) &lt; 1 </span><span class="cov0" title="0">{
+                d.error = true
+                return 0, false
+        }</span>
+        <span class="cov8" title="1">return p[0], true</span>
+}
+
+// Make a string by stopping at the first NUL
+func byteString(p []byte) string <span class="cov8" title="1">{
+        for i := 0; i &lt; len(p); i++ </span><span class="cov8" title="1">{
+                if p[i] == 0 </span><span class="cov8" title="1">{
+                        return string(p[0:i])
+                }</span>
+        }
+        <span class="cov0" title="0">return string(p)</span>
+}
+
+var badData = errors.New("malformed time zone information")
+
+func loadZoneData(bytes []byte) (l *Location, err error) <span class="cov8" title="1">{
+        d := data{bytes, false}
+
+        // 4-byte magic "TZif"
+        if magic := d.read(4); string(magic) != "TZif" </span><span class="cov0" title="0">{
+                return nil, badData
+        }</span>
+
+        // 1-byte version, then 15 bytes of padding
+        <span class="cov8" title="1">var p []byte
+        if p = d.read(16); len(p) != 16 || p[0] != 0 &amp;&amp; p[0] != '2' &amp;&amp; p[0] != '3' </span><span class="cov0" title="0">{
+                return nil, badData
+        }</span>
+
+        // six big-endian 32-bit integers:
+        //        number of UTC/local indicators
+        //        number of standard/wall indicators
+        //        number of leap seconds
+        //        number of transition times
+        //        number of local time zones
+        //        number of characters of time zone abbrev strings
+        <span class="cov8" title="1">const (
+                NUTCLocal = iota
+                NStdWall
+                NLeap
+                NTime
+                NZone
+                NChar
+        )
+        var n [6]int
+        for i := 0; i &lt; 6; i++ </span><span class="cov8" title="1">{
+                nn, ok := d.big4()
+                if !ok </span><span class="cov0" title="0">{
+                        return nil, badData
+                }</span>
+                <span class="cov8" title="1">n[i] = int(nn)</span>
+        }
+
+        // Transition times.
+        <span class="cov8" title="1">txtimes := data{d.read(n[NTime] * 4), false}
+
+        // Time zone indices for transition times.
+        txzones := d.read(n[NTime])
+
+        // Zone info structures
+        zonedata := data{d.read(n[NZone] * 6), false}
+
+        // Time zone abbreviations.
+        abbrev := d.read(n[NChar])
+
+        // Leap-second time pairs
+        d.read(n[NLeap] * 8)
+
+        // Whether tx times associated with local time types
+        // are specified as standard time or wall time.
+        isstd := d.read(n[NStdWall])
+
+        // Whether tx times associated with local time types
+        // are specified as UTC or local time.
+        isutc := d.read(n[NUTCLocal])
+
+        if d.error </span><span class="cov0" title="0">{ // ran out of data
+                return nil, badData
+        }</span>
+
+        // If version == 2 or 3, the entire file repeats, this time using
+        // 8-byte ints for txtimes and leap seconds.
+        // We won't need those until 2106.
+
+        // Now we can build up a useful data structure.
+        // First the zone information.
+        //        utcoff[4] isdst[1] nameindex[1]
+        <span class="cov8" title="1">zone := make([]zone, n[NZone])
+        for i := range zone </span><span class="cov8" title="1">{
+                var ok bool
+                var n uint32
+                if n, ok = zonedata.big4(); !ok </span><span class="cov0" title="0">{
+                        return nil, badData
+                }</span>
+                <span class="cov8" title="1">zone[i].offset = int(int32(n))
+                var b byte
+                if b, ok = zonedata.byte(); !ok </span><span class="cov0" title="0">{
+                        return nil, badData
+                }</span>
+                <span class="cov8" title="1">zone[i].isDST = b != 0
+                if b, ok = zonedata.byte(); !ok || int(b) &gt;= len(abbrev) </span><span class="cov0" title="0">{
+                        return nil, badData
+                }</span>
+                <span class="cov8" title="1">zone[i].name = byteString(abbrev[b:])</span>
+        }
+
+        // Now the transition time info.
+        <span class="cov8" title="1">tx := make([]zoneTrans, n[NTime])
+        for i := range tx </span><span class="cov8" title="1">{
+                var ok bool
+                var n uint32
+                if n, ok = txtimes.big4(); !ok </span><span class="cov0" title="0">{
+                        return nil, badData
+                }</span>
+                <span class="cov8" title="1">tx[i].when = int64(int32(n))
+                if int(txzones[i]) &gt;= len(zone) </span><span class="cov0" title="0">{
+                        return nil, badData
+                }</span>
+                <span class="cov8" title="1">tx[i].index = txzones[i]
+                if i &lt; len(isstd) </span><span class="cov8" title="1">{
+                        tx[i].isstd = isstd[i] != 0
+                }</span>
+                <span class="cov8" title="1">if i &lt; len(isutc) </span><span class="cov8" title="1">{
+                        tx[i].isutc = isutc[i] != 0
+                }</span>
+        }
+
+        <span class="cov8" title="1">if len(tx) == 0 </span><span class="cov8" title="1">{
+                // Build fake transition to cover all time.
+                // This happens in fixed locations like "Etc/GMT0".
+                tx = append(tx, zoneTrans{when: alpha, index: 0})
+        }</span>
+
+        // Committed to succeed.
+        <span class="cov8" title="1">l = &amp;Location{zone: zone, tx: tx}
+
+        // Fill in the cache with information about right now,
+        // since that will be the most common lookup.
+        sec, _ := now()
+        for i := range tx </span><span class="cov8" title="1">{
+                if tx[i].when &lt;= sec &amp;&amp; (i+1 == len(tx) || sec &lt; tx[i+1].when) </span><span class="cov8" title="1">{
+                        l.cacheStart = tx[i].when
+                        l.cacheEnd = omega
+                        if i+1 &lt; len(tx) </span><span class="cov8" title="1">{
+                                l.cacheEnd = tx[i+1].when
+                        }</span>
+                        <span class="cov8" title="1">l.cacheZone = &amp;l.zone[tx[i].index]</span>
+                }
+        }
+
+        <span class="cov8" title="1">return l, nil</span>
+}
+
+func loadZoneFile(dir, name string) (l *Location, err error) <span class="cov8" title="1">{
+        if len(dir) &gt; 4 &amp;&amp; dir[len(dir)-4:] == ".zip" </span><span class="cov8" title="1">{
+                return loadZoneZip(dir, name)
+        }</span>
+        <span class="cov8" title="1">if dir != "" </span><span class="cov8" title="1">{
+                name = dir + "/" + name
+        }</span>
+        <span class="cov8" title="1">buf, err := readFile(name)
+        if err != nil </span><span class="cov8" title="1">{
+                return
+        }</span>
+        <span class="cov8" title="1">return loadZoneData(buf)</span>
+}
+
+// There are 500+ zoneinfo files.  Rather than distribute them all
+// individually, we ship them in an uncompressed zip file.
+// Used this way, the zip file format serves as a commonly readable
+// container for the individual small files.  We choose zip over tar
+// because zip files have a contiguous table of contents, making
+// individual file lookups faster, and because the per-file overhead
+// in a zip file is considerably less than tar's 512 bytes.
+
+// get4 returns the little-endian 32-bit value in b.
+func get4(b []byte) int <span class="cov8" title="1">{
+        if len(b) &lt; 4 </span><span class="cov0" title="0">{
+                return 0
+        }</span>
+        <span class="cov8" title="1">return int(b[0]) | int(b[1])&lt;&lt;8 | int(b[2])&lt;&lt;16 | int(b[3])&lt;&lt;24</span>
+}
+
+// get2 returns the little-endian 16-bit value in b.
+func get2(b []byte) int <span class="cov8" title="1">{
+        if len(b) &lt; 2 </span><span class="cov0" title="0">{
+                return 0
+        }</span>
+        <span class="cov8" title="1">return int(b[0]) | int(b[1])&lt;&lt;8</span>
+}
+
+func loadZoneZip(zipfile, name string) (l *Location, err error) <span class="cov8" title="1">{
+        fd, err := open(zipfile)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errors.New("open " + zipfile + ": " + err.Error())
+        }</span>
+        <span class="cov8" title="1">defer closefd(fd)
+
+        const (
+                zecheader = 0x06054b50
+                zcheader  = 0x02014b50
+                ztailsize = 22
+
+                zheadersize = 30
+                zheader     = 0x04034b50
+        )
+
+        buf := make([]byte, ztailsize)
+        if err := preadn(fd, buf, -ztailsize); err != nil || get4(buf) != zecheader </span><span class="cov0" title="0">{
+                return nil, errors.New("corrupt zip file " + zipfile)
+        }</span>
+        <span class="cov8" title="1">n := get2(buf[10:])
+        size := get4(buf[12:])
+        off := get4(buf[16:])
+
+        buf = make([]byte, size)
+        if err := preadn(fd, buf, off); err != nil </span><span class="cov0" title="0">{
+                return nil, errors.New("corrupt zip file " + zipfile)
+        }</span>
+
+        <span class="cov8" title="1">for i := 0; i &lt; n; i++ </span><span class="cov8" title="1">{
+                // zip entry layout:
+                //        0        magic[4]
+                //        4        madevers[1]
+                //        5        madeos[1]
+                //        6        extvers[1]
+                //        7        extos[1]
+                //        8        flags[2]
+                //        10        meth[2]
+                //        12        modtime[2]
+                //        14        moddate[2]
+                //        16        crc[4]
+                //        20        csize[4]
+                //        24        uncsize[4]
+                //        28        namelen[2]
+                //        30        xlen[2]
+                //        32        fclen[2]
+                //        34        disknum[2]
+                //        36        iattr[2]
+                //        38        eattr[4]
+                //        42        off[4]
+                //        46        name[namelen]
+                //        46+namelen+xlen+fclen - next header
+                //
+                if get4(buf) != zcheader </span><span class="cov0" title="0">{
+                        break</span>
+                }
+                <span class="cov8" title="1">meth := get2(buf[10:])
+                size := get4(buf[24:])
+                namelen := get2(buf[28:])
+                xlen := get2(buf[30:])
+                fclen := get2(buf[32:])
+                off := get4(buf[42:])
+                zname := buf[46 : 46+namelen]
+                buf = buf[46+namelen+xlen+fclen:]
+                if string(zname) != name </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">if meth != 0 </span><span class="cov0" title="0">{
+                        return nil, errors.New("unsupported compression for " + name + " in " + zipfile)
+                }</span>
+
+                // zip per-file header layout:
+                //        0        magic[4]
+                //        4        extvers[1]
+                //        5        extos[1]
+                //        6        flags[2]
+                //        8        meth[2]
+                //        10        modtime[2]
+                //        12        moddate[2]
+                //        14        crc[4]
+                //        18        csize[4]
+                //        22        uncsize[4]
+                //        26        namelen[2]
+                //        28        xlen[2]
+                //        30        name[namelen]
+                //        30+namelen+xlen - file data
+                //
+                <span class="cov8" title="1">buf = make([]byte, zheadersize+namelen)
+                if err := preadn(fd, buf, off); err != nil ||
+                        get4(buf) != zheader ||
+                        get2(buf[8:]) != meth ||
+                        get2(buf[26:]) != namelen ||
+                        string(buf[30:30+namelen]) != name </span><span class="cov0" title="0">{
+                        return nil, errors.New("corrupt zip file " + zipfile)
+                }</span>
+                <span class="cov8" title="1">xlen = get2(buf[28:])
+
+                buf = make([]byte, size)
+                if err := preadn(fd, buf, off+30+namelen+xlen); err != nil </span><span class="cov0" title="0">{
+                        return nil, errors.New("corrupt zip file " + zipfile)
+                }</span>
+
+                <span class="cov8" title="1">return loadZoneData(buf)</span>
+        }
+
+        <span class="cov0" title="0">return nil, errors.New("cannot find " + name + " in zip file " + zipfile)</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// +build darwin dragonfly freebsd linux nacl netbsd openbsd solaris
+
+// Parse "zoneinfo" time zone file.
+// This is a fairly standard file format used on OS X, Linux, BSD, Sun, and others.
+// See tzfile(5), http://en.wikipedia.org/wiki/Zoneinfo,
+// and ftp://munnari.oz.au/pub/oldtz/
+
+package time
+
+import (
+        "errors"
+        "runtime"
+        "syscall"
+)
+
+func initTestingZone() <span class="cov8" title="1">{
+        z, err := loadZoneFile(runtime.GOROOT()+"/lib/time/zoneinfo.zip", "America/Los_Angeles")
+        if err != nil </span><span class="cov0" title="0">{
+                panic("cannot load America/Los_Angeles for testing: " + err.Error())
+        }</span>
+        <span class="cov8" title="1">z.name = "Local"
+        localLoc = *z</span>
+}
+
+// Many systems use /usr/share/zoneinfo, Solaris 2 has
+// /usr/share/lib/zoneinfo, IRIX 6 has /usr/lib/locale/TZ.
+var zoneDirs = []string{
+        "/usr/share/zoneinfo/",
+        "/usr/share/lib/zoneinfo/",
+        "/usr/lib/locale/TZ/",
+        runtime.GOROOT() + "/lib/time/zoneinfo.zip",
+}
+
+var origZoneDirs = zoneDirs
+
+func forceZipFileForTesting(zipOnly bool) <span class="cov8" title="1">{
+        zoneDirs = make([]string, len(origZoneDirs))
+        copy(zoneDirs, origZoneDirs)
+        if zipOnly </span><span class="cov8" title="1">{
+                for i := 0; i &lt; len(zoneDirs)-1; i++ </span><span class="cov8" title="1">{
+                        zoneDirs[i] = "/XXXNOEXIST"
+                }</span>
+        }
+}
+
+func initLocal() <span class="cov8" title="1">{
+        // consult $TZ to find the time zone to use.
+        // no $TZ means use the system default /etc/localtime.
+        // $TZ="" means use UTC.
+        // $TZ="foo" means use /usr/share/zoneinfo/foo.
+
+        tz, ok := syscall.Getenv("TZ")
+        switch </span>{
+        <span class="cov8" title="1">case !ok:
+                z, err := loadZoneFile("", "/etc/localtime")
+                if err == nil </span><span class="cov8" title="1">{
+                        localLoc = *z
+                        localLoc.name = "Local"
+                        return
+                }</span>
+        <span class="cov0" title="0">case tz != "" &amp;&amp; tz != "UTC":
+                if z, err := loadLocation(tz); err == nil </span><span class="cov0" title="0">{
+                        localLoc = *z
+                        return
+                }</span>
+        }
+
+        // Fall back to UTC.
+        <span class="cov0" title="0">localLoc.name = "UTC"</span>
+}
+
+func loadLocation(name string) (*Location, error) <span class="cov8" title="1">{
+        for _, zoneDir := range zoneDirs </span><span class="cov8" title="1">{
+                if z, err := loadZoneFile(zoneDir, name); err == nil </span><span class="cov8" title="1">{
+                        z.name = name
+                        return z, nil
+                }</span>
+        }
+        <span class="cov0" title="0">return nil, errors.New("unknown time zone " + name)</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible = document.getElementById('file0');
+		files.addEventListener('change', onChange, false);
+		function onChange() {
+			visible.style.display = 'none';
+			visible = document.getElementById(files.value);
+			visible.style.display = 'block';
+			window.scrollTo(0, 0);
+		}
+	})();
+	</script>
+</html>
