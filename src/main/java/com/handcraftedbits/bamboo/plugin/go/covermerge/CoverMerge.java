@@ -48,7 +48,7 @@ public final class CoverMerge {
                final int index = filename.indexOf(".go");
 
                if (index == -1) {
-                    filename = "<unknown>.go";
+                    filename = "&lt;unknown&gt;.go";
                }
 
                // Now, find the <pre> block with corresponding ID; this will contain the file contents (and coverage
@@ -57,7 +57,7 @@ public final class CoverMerge {
                contents = document.select("pre#" + id).first();
 
                if (contents == null) {
-                    fileContents.put(filename, "<unable to find coverage information for file>");
+                    fileContents.put(filename, "&lt;unable to find coverage information for file&gt;");
                }
 
                else {
@@ -77,7 +77,7 @@ public final class CoverMerge {
                documents[i] = Jsoup.parse(inputStreams[i], "UTF-8", "");
           }
 
-          if (inputStreams.length == 0) {
+          if (inputStreams.length == 1) {
                return documents[0].toString();
           }
 
