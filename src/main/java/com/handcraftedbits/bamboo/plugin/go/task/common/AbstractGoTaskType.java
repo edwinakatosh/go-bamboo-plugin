@@ -22,7 +22,7 @@ package com.handcraftedbits.bamboo.plugin.go.task.common;
 import com.atlassian.bamboo.process.EnvironmentVariableAccessor;
 import com.atlassian.bamboo.task.TaskType;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
-import com.opensymphony.xwork2.TextProvider;
+import com.atlassian.struts.TextProvider;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class AbstractGoTaskType implements TaskType {

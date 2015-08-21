@@ -24,9 +24,9 @@ import java.io.File;
 import com.atlassian.bamboo.process.EnvironmentVariableAccessor;
 import com.atlassian.bamboo.task.TaskConfigConstants;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
+import com.atlassian.struts.TextProvider;
 import com.handcraftedbits.bamboo.plugin.go.capability.GoCapabilityTypeModule;
 import com.handcraftedbits.bamboo.plugin.go.util.Constants;
-import com.opensymphony.xwork2.TextProvider;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 

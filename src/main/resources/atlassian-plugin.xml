@@ -93,4 +93,14 @@
 
   <!-- i18n -->
   <resource type="i18n" name="i18n" location="com.handcraftedbits.bamboo.plugin.go.i18n.english" />
+
+  <!-- Web resources -->
+  <web-resource key="go-bamboo-plugin-resources" name="Go Plugin for Bamboo Resources">
+    <context>bamboo.configuration</context>
+    <dependency>com.atlassian.auiplugin:ajs</dependency>
+    <resource type="download" name="go-bamboo-plugin.css"
+              location="com/handcraftedbits/bamboo/plugin/go/style/go-bamboo-plugin.css" />
+    <resource type="download" name="go-bamboo-plugin.js"
+              location="com/handcraftedbits/bamboo/plugin/go/js/go-bamboo-plugin.js" />
+  </web-resource>
 </atlassian-plugin>

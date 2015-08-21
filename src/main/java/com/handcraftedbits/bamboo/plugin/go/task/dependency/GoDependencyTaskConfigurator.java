@@ -21,9 +21,9 @@ package com.handcraftedbits.bamboo.plugin.go.task.dependency;
 
 import com.atlassian.bamboo.process.EnvironmentVariableAccessor;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
+import com.atlassian.struts.TextProvider;
 import com.handcraftedbits.bamboo.plugin.go.capability.GoCapabilityTypeModule;
 import com.handcraftedbits.bamboo.plugin.go.task.common.AbstractGoExecutableTaskConfigurator;
-import com.opensymphony.xwork2.TextProvider;
 import org.jetbrains.annotations.NotNull;
 
 public final class GoDependencyTaskConfigurator extends AbstractGoExecutableTaskConfigurator {

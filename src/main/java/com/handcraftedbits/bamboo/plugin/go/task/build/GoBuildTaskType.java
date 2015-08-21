@@ -20,7 +20,6 @@
 package com.handcraftedbits.bamboo.plugin.go.task.build;
 
 import java.util.LinkedList;
-import java.util.List;
 
 import com.atlassian.bamboo.process.EnvironmentVariableAccessor;
 import com.atlassian.bamboo.task.TaskContext;
@@ -28,12 +27,13 @@ import com.atlassian.bamboo.task.TaskException;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
+import com.atlassian.struts.TextProvider;
 import com.atlassian.utils.process.ExternalProcess;
-import com.handcraftedbits.bamboo.plugin.go.parser.GoArgumentList;
 import com.handcraftedbits.bamboo.plugin.go.task.common.AbstractGoTaskType;
 import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackageAwareTaskConfiguration;
+import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackageDefinition;
+import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackagesDefinition;
 import com.handcraftedbits.bamboo.plugin.go.task.common.ProcessHelper;
-import com.opensymphony.xwork2.TextProvider;
 import org.jetbrains.annotations.NotNull;
 
 public final class GoBuildTaskType extends AbstractGoTaskType {
@@ -48,16 +48,16 @@ public final class GoBuildTaskType extends AbstractGoTaskType {
      public TaskResult execute (@NotNull final TaskContext taskContext) throws TaskException {
           final GoPackageAwareTaskConfiguration configuration = new GoPackageAwareTaskConfiguration(getTaskHelper(),
                taskContext);
-          final List<GoArgumentList> packagesWithArguments = configuration.getPackagesWithArguments(null);
+          final GoPackagesDefinition packages = configuration.getPackages();
           final ProcessHelper processHelper = getTaskHelper().createProcessHelper(taskContext);
 
-          for (final GoArgumentList packageWithArguments : packagesWithArguments) {
+          for (final GoPackageDefinition pkg : packages) {
                final LinkedList<String> commandLine = new LinkedList<>();
                final ExternalProcess process;
 
                commandLine.add(configuration.getGoExecutable());
                commandLine.add("install");
-               commandLine.addAll(packageWithArguments.getItems());
+               commandLine.addAll(pkg.getCommandLine(null));
 
                process = processHelper.executeProcess(commandLine, configuration.getSourcePath(),
                     configuration.getEnvironmentVariables());

@@ -22,7 +22,6 @@ package com.handcraftedbits.bamboo.plugin.go.task.test;
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedList;
-import java.util.List;
 
 import com.atlassian.bamboo.process.EnvironmentVariableAccessor;
 import com.atlassian.bamboo.task.TaskContext;
@@ -30,11 +29,12 @@ import com.atlassian.bamboo.task.TaskException;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
+import com.atlassian.struts.TextProvider;
 import com.atlassian.utils.process.ExternalProcess;
-import com.handcraftedbits.bamboo.plugin.go.parser.GoArgumentList;
 import com.handcraftedbits.bamboo.plugin.go.task.common.AbstractGoTaskType;
+import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackageDefinition;
+import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackagesDefinition;
 import com.handcraftedbits.bamboo.plugin.go.task.common.ProcessHelper;
-import com.opensymphony.xwork2.TextProvider;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -51,8 +51,7 @@ public final class GoTestTaskType extends AbstractGoTaskType {
           final GoTestTaskConfiguration configuration = new GoTestTaskConfiguration(getTaskHelper(), taskContext);
           int i = 0;
           final File outputDirectory = new File(taskContext.getWorkingDirectory(), configuration.getLogOutputPath());
-          final List<GoArgumentList> packagesWithArguments = configuration.getPackagesWithArguments
-               (GoTestTaskConfiguration.flagsToExclude);
+          final GoPackagesDefinition packages = configuration.getPackages();
           final ProcessHelper processHelper = getTaskHelper().createProcessHelper(taskContext);
 
           if (outputDirectory.exists()) {
@@ -75,7 +74,7 @@ public final class GoTestTaskType extends AbstractGoTaskType {
                return TaskResultBuilder.newBuilder(taskContext).failedWithError().build();
           }
 
-          for (final GoArgumentList packageWithArguments : packagesWithArguments) {
+          for (final GoPackageDefinition pkg : packages) {
                final LinkedList<String> commandLine = new LinkedList<>();
                final FileOutputHandler fileOutputHandler = new FileOutputHandler(new File(outputDirectory,
                     "goTestOutput" + (i++) + ".log"));
@@ -84,7 +83,7 @@ public final class GoTestTaskType extends AbstractGoTaskType {
                commandLine.add(configuration.getGoExecutable());
                commandLine.add("test");
                commandLine.add("-v");
-               commandLine.addAll(packageWithArguments.getItems());
+               commandLine.addAll(pkg.getCommandLine(GoTestTaskConfiguration.flagsToExclude));
 
                if (configuration.shouldLogOutputToBuild()) {
                     process = processHelper.executeProcess(commandLine, configuration.getSourcePath(),

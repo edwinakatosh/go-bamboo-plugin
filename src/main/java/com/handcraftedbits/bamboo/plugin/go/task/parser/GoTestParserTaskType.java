@@ -35,10 +35,10 @@ import com.atlassian.bamboo.task.TaskException;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
+import com.atlassian.struts.TextProvider;
 import com.handcraftedbits.bamboo.plugin.go.model.PackageTestResults;
 import com.handcraftedbits.bamboo.plugin.go.parser.GoTestParser;
 import com.handcraftedbits.bamboo.plugin.go.task.common.AbstractGoTaskType;
-import com.opensymphony.xwork2.TextProvider;
 import org.jetbrains.annotations.NotNull;
 
 public final class GoTestParserTaskType extends AbstractGoTaskType {
