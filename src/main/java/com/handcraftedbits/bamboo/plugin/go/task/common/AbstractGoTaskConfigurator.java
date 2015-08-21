@@ -33,7 +33,7 @@ import com.atlassian.bamboo.utils.error.ErrorCollection;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
 import com.atlassian.bamboo.v2.build.agent.capability.Requirement;
 import com.atlassian.bamboo.v2.build.agent.capability.RequirementImpl;
-import com.opensymphony.xwork2.TextProvider;
+import com.atlassian.struts.TextProvider;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -120,7 +120,7 @@ public abstract class AbstractGoTaskConfigurator extends AbstractTaskConfigurato
           for (final String paramName : this.parameters.keySet()) {
                final ParameterInfo parameterInfo = this.parameters.get(paramName);
 
-               if (parameterInfo.isRequired() && StringUtils.isEmpty(params.getString(paramName))) {
+               if (parameterInfo.isRequired() && StringUtils.isBlank(params.getString(paramName))) {
                     errorCollection.addError(paramName, this.taskHelper.getText(parameterInfo.getErrorMessage()));
                }
           }

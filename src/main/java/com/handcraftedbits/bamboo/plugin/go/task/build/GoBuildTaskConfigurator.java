@@ -21,24 +21,14 @@ package com.handcraftedbits.bamboo.plugin.go.task.build;
 
 import com.atlassian.bamboo.process.EnvironmentVariableAccessor;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
-import com.handcraftedbits.bamboo.plugin.go.capability.GoCapabilityTypeModule;
-import com.handcraftedbits.bamboo.plugin.go.task.common.AbstractGoExecutableTaskConfigurator;
-import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackageAwareTaskConfiguration;
-import com.opensymphony.xwork2.TextProvider;
+import com.atlassian.struts.TextProvider;
+import com.handcraftedbits.bamboo.plugin.go.task.common.AbstractPackageAwareTaskConfigurator;
 import org.jetbrains.annotations.NotNull;
 
-public final class GoBuildTaskConfigurator extends AbstractGoExecutableTaskConfigurator {
+public final class GoBuildTaskConfigurator extends AbstractPackageAwareTaskConfigurator {
      public GoBuildTaskConfigurator (@NotNull final CapabilityContext capabilityContext,
           @NotNull final EnvironmentVariableAccessor environmentVariableAccessor,
           @NotNull final TextProvider textProvider) {
           super(capabilityContext, environmentVariableAccessor, textProvider, true);
-
-          // Add requirements.
-
-          addRequirement(GoCapabilityTypeModule.CAPABILITY_KEY_GO);
-
-          // Add parameters.
-
-          addParameter(GoPackageAwareTaskConfiguration.PARAM_PACKAGES, "./...", "task.test.build.packages.error");
      }
 }

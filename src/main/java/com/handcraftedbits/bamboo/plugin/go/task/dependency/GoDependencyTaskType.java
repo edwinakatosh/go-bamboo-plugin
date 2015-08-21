@@ -28,11 +28,11 @@ import com.atlassian.bamboo.task.TaskException;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
+import com.atlassian.struts.TextProvider;
 import com.atlassian.utils.process.ExternalProcess;
 import com.handcraftedbits.bamboo.plugin.go.task.common.AbstractGoTaskType;
 import com.handcraftedbits.bamboo.plugin.go.task.common.GoTaskConfiguration;
 import com.handcraftedbits.bamboo.plugin.go.task.common.ProcessHelper;
-import com.opensymphony.xwork2.TextProvider;
 import org.jetbrains.annotations.NotNull;
 
 public final class GoDependencyTaskType extends AbstractGoTaskType {

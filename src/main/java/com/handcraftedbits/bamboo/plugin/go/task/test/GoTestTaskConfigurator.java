@@ -21,27 +21,20 @@ package com.handcraftedbits.bamboo.plugin.go.task.test;
 
 import com.atlassian.bamboo.process.EnvironmentVariableAccessor;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
-import com.handcraftedbits.bamboo.plugin.go.capability.GoCapabilityTypeModule;
-import com.handcraftedbits.bamboo.plugin.go.task.common.AbstractGoExecutableTaskConfigurator;
-import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackageAwareTaskConfiguration;
-import com.opensymphony.xwork2.TextProvider;
+import com.atlassian.struts.TextProvider;
+import com.handcraftedbits.bamboo.plugin.go.task.common.AbstractPackageAwareTaskConfigurator;
 import org.jetbrains.annotations.NotNull;
 
-public final class GoTestTaskConfigurator extends AbstractGoExecutableTaskConfigurator {
+public final class GoTestTaskConfigurator extends AbstractPackageAwareTaskConfigurator {
      public GoTestTaskConfigurator (@NotNull final CapabilityContext capabilityContext,
           @NotNull final EnvironmentVariableAccessor environmentVariableAccessor,
           @NotNull final TextProvider textProvider) {
           super(capabilityContext, environmentVariableAccessor, textProvider, true);
-
-          // Add requirements.
-
-          addRequirement(GoCapabilityTypeModule.CAPABILITY_KEY_GO);
 
           // Add parameters.
 
           addParameter(GoTestTaskConfiguration.PARAM_LOG_OUTPUT_PATH, "_goTestOutput/",
                "task.test.field.logOutputPath.error");
           addParameter(GoTestTaskConfiguration.PARAM_LOG_OUTPUT_TO_BUILD, true);
-          addParameter(GoPackageAwareTaskConfiguration.PARAM_PACKAGES, "./...", "task.test.field.packages.error");
      }
 }

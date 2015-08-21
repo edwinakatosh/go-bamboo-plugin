@@ -19,20 +19,13 @@
  */
 package com.handcraftedbits.bamboo.plugin.go.task.common;
 
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.atlassian.bamboo.task.TaskConfigConstants;
 import com.atlassian.bamboo.task.TaskContext;
-import com.handcraftedbits.bamboo.plugin.go.parser.GoArgumentList;
-import com.handcraftedbits.bamboo.plugin.go.parser.GoArgumentParser;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public class GoPackageAwareTaskConfiguration extends GoTaskConfiguration {
-     public static final String PARAM_PACKAGES = "packages";
-
      public GoPackageAwareTaskConfiguration (@NotNull final GoTaskHelper taskHelper,
           @NotNull final TaskContext taskContext) {
           super(taskHelper, taskContext);
@@ -45,8 +38,7 @@ public class GoPackageAwareTaskConfiguration extends GoTaskConfiguration {
      }
 
      @NotNull
-     public List<GoArgumentList> getPackagesWithArguments (@Nullable final Set<String> flagsToExclude) {
-          return GoArgumentParser.parseArguments(getTaskContext().getConfigurationMap().get
-               (GoPackageAwareTaskConfiguration.PARAM_PACKAGES), flagsToExclude);
+     public GoPackagesDefinition getPackages () {
+          return new GoPackagesDefinition(getTaskContext().getConfigurationMap());
      }
 }

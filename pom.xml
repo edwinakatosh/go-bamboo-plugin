@@ -117,6 +117,30 @@
     </plugins>
   </build>
 
+  <profiles>
+    <profile>
+      <id>update-copyright</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>src/main/resources/**/*.css</include>
+                <include>src/main/resources/**/*.js</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
   <repositories>
     <repository>
       <id>atlassian-public</id>
