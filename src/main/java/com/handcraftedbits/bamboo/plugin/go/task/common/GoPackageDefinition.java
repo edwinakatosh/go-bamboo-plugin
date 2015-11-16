@@ -28,7 +28,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public final class GoPackageDefinition implements Serializable {
-     private final String flags;
+	private static final long serialVersionUID = 1L;
+	
+	private final String flags;
      private final int index;
      private boolean last;
      private final String name;
@@ -64,7 +66,6 @@ public final class GoPackageDefinition implements Serializable {
           return this.name;
      }
 
-     @SuppressWarnings("unused")
      public boolean isLast () {
           return this.last;
      }

@@ -38,7 +38,6 @@ public final class GoTestParser {
      private GoTestParser () {
      }
 
-     @SuppressWarnings("unchecked")
      public static List<PackageTestResults> parseTests (final InputStream input) throws Exception {
           final List<String> lines = IOUtils.readLines(input, "UTF-8");
           final List<PackageTestResults> packageTestResults = new LinkedList<>();

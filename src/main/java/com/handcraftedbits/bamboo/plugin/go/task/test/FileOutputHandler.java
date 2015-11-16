@@ -20,7 +20,6 @@
 package com.handcraftedbits.bamboo.plugin.go.task.test;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,26 +38,12 @@ final class FileOutputHandler extends BaseOutputHandler {
 
      @Override
      public void process (@NotNull final InputStream output) throws ProcessException {
-          final FileOutputStream fileOutput;
-
-          try {
-               fileOutput = new FileOutputStream(this.file, true);
-          }
-
-          catch (final FileNotFoundException e) {
-               throw new ProcessException(e);
-          }
-
-          try {
-               IOUtils.copy(output, fileOutput);
+          try (final FileOutputStream fileOutput = new FileOutputStream(this.file, true)) {
+        	  IOUtils.copy(output, fileOutput);
           }
 
           catch (final IOException e) {
                throw new ProcessException(e);
-          }
-
-          finally {
-               IOUtils.closeQuietly(fileOutput);
           }
      }
 }
