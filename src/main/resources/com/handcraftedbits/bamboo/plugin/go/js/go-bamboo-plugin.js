@@ -102,24 +102,23 @@
                item.remove();
           };
 
-          var validatePackage = function() {
-               var pkg = $(this);
+          var validatePackage = function(pkg) {
                var value = pkg.attr("value");
 
                // Remove the error div, if available.
-
+               
                pkg.parent().find("div.error").remove();
 
                if (!value || !value.trim()) {
                     var errorItem = $(AJS.template.load("gbp-widget-package-error-template").toString());
-
+                    
                     pkg.after(errorItem);
                }
           };
 
           var validatePackages = function() {
                $(selectorPackageName).each(function() {
-                    validatePackage();
+                    validatePackage($(this));
                })
           };
 
