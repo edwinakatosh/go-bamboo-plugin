@@ -66,7 +66,7 @@ public final class GoTestParser {
                                    break;
                               }
 
-                              case "SKIP": {
+                              default: {
                                    status = TestStatus.SKIPPED;
 
                                    break;
@@ -97,7 +97,7 @@ public final class GoTestParser {
                          if (testResults.empty()) {
                               double duration = 0.0d;
                               final String durationStr = matcher.group(3);
-                              TestStatus testStatus = TestStatus.SKIPPED;
+                              TestStatus testStatus;
 
                               switch (matcher.group(1)) {
                                    case "FAIL": {
@@ -110,6 +110,10 @@ public final class GoTestParser {
                                         testStatus = TestStatus.PASSED;
 
                                         break;
+                                   }
+                                   
+                                   default: {
+                                        testStatus = TestStatus.SKIPPED;
                                    }
                               }
 

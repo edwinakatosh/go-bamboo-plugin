@@ -26,9 +26,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import com.atlassian.bamboo.collections.ActionParametersMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import com.atlassian.bamboo.collections.ActionParametersMap;
 
 public final class GoPackagesDefinition implements Iterable<GoPackageDefinition> {
      private static final String PARAM_FLAGS_PREFIX = "_gbp_flags_";
@@ -53,7 +54,7 @@ public final class GoPackagesDefinition implements Iterable<GoPackageDefinition>
           this.packages = new ArrayList<>();
 
           // We expect the submitted form to contain a field with comma-delimited widget indices and a corresponding
-          // packageName and flags field.  Maintaining this order is important for validation purposes.
+          // packageName and flags field. Maintaining this order is important for validation purposes.
 
           indicesStr = getParameter(configuration.get(GoPackagesDefinition.PARAM_INDICES));
 
@@ -67,8 +68,8 @@ public final class GoPackagesDefinition implements Iterable<GoPackageDefinition>
 
           for (final Integer index : indices) {
                final String flags = getParameter(configuration.get(GoPackagesDefinition.PARAM_FLAGS_PREFIX + index));
-               final String packageName = getParameter(configuration.get(GoPackagesDefinition.PARAM_PACKAGENAME_PREFIX +
-                    index));
+               final String packageName =
+                    getParameter(configuration.get(GoPackagesDefinition.PARAM_PACKAGENAME_PREFIX + index));
 
                addPackageDefinition(index, (packageName == null) ? "" : packageName, (flags == null) ? "" : flags);
           }
@@ -138,7 +139,7 @@ public final class GoPackagesDefinition implements Iterable<GoPackageDefinition>
      @NotNull
      private Set<Integer> parseIndices (@NotNull final String indicesStr) {
           final Set<Integer> indices = new TreeSet<>();
-          final String splitIndices[] = indicesStr.split(",");
+          final String[] splitIndices = indicesStr.split(",");
 
           for (final String index : splitIndices) {
                try {

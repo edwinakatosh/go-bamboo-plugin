@@ -31,7 +31,7 @@ import org.jetbrains.annotations.NotNull;
 
 final class CompositeOutputHandler extends BaseOutputHandler {
      private final BuildLogger buildLogger;
-     private final OutputHandler outputHandlers[];
+     private final OutputHandler[] outputHandlers;
 
      CompositeOutputHandler (@NotNull final BuildLogger buildLogger, @NotNull final OutputHandler... outputHandlers) {
           this.buildLogger = buildLogger;
@@ -68,7 +68,7 @@ final class CompositeOutputHandler extends BaseOutputHandler {
           }
      }
 
-     private final class InputStreamWrapper extends BufferedInputStream {
+     private static final class InputStreamWrapper extends BufferedInputStream {
           private InputStreamWrapper (@NotNull final InputStream inputStream) {
                super(inputStream);
           }

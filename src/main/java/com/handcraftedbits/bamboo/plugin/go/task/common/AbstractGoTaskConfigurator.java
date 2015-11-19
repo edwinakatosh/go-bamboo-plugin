@@ -22,6 +22,7 @@ package com.handcraftedbits.bamboo.plugin.go.task.common;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.atlassian.bamboo.collections.ActionParametersMap;
@@ -97,9 +98,9 @@ public abstract class AbstractGoTaskConfigurator extends AbstractTaskConfigurato
      @Override
      public void populateContextForCreate (@NotNull final Map<String, Object> context) {
           super.populateContextForCreate(context);
-
-          for (final String paramName : this.parameters.keySet()) {
-               context.put(paramName, this.parameters.get(paramName).getDefaultValue());
+          
+          for (final Entry<String, ParameterInfo> param : this.parameters.entrySet()) {
+               context.put(param.getKey(), param.getValue().getDefaultValue());
           }
      }
 
@@ -116,17 +117,16 @@ public abstract class AbstractGoTaskConfigurator extends AbstractTaskConfigurato
      @Override
      public void validate (@NotNull final ActionParametersMap params, @NotNull final ErrorCollection errorCollection) {
           super.validate(params, errorCollection);
-
-          for (final String paramName : this.parameters.keySet()) {
-               final ParameterInfo parameterInfo = this.parameters.get(paramName);
-
-               if (parameterInfo.isRequired() && StringUtils.isBlank(params.getString(paramName))) {
-                    errorCollection.addError(paramName, this.taskHelper.getText(parameterInfo.getErrorMessage()));
+          
+          for (final Entry<String, ParameterInfo> param : this.parameters.entrySet()) {
+               if (param.getValue().isRequired() && StringUtils.isBlank(params.getString(param.getKey()))) {
+                    errorCollection.addError(param.getKey(), this.taskHelper.getText
+                         (param.getValue().getErrorMessage()));
                }
           }
      }
 
-     private final class ParameterInfo {
+     private static final class ParameterInfo {
           private final Object defaultValue;
           private final String errorMessage;
           private final boolean required;

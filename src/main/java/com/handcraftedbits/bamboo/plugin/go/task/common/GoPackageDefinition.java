@@ -28,6 +28,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public final class GoPackageDefinition implements Serializable {
+     private static final long serialVersionUID = 1L;
+
      private final String flags;
      private final int index;
      private boolean last;
@@ -72,7 +74,7 @@ public final class GoPackageDefinition implements Serializable {
      @NotNull
      private List<String> parseFlags (@Nullable final Set<String> flagsToExclude) {
           final LinkedList<String> result = new LinkedList<>();
-          final String tokens[];
+          final String[] tokens;
 
           if (this.flags.trim().length() == 0) {
                return result;
@@ -86,9 +88,10 @@ public final class GoPackageDefinition implements Serializable {
                          result.add(token);
                     }
 
-                    else if (!flagsToExclude.contains(token)) {
-                         result.add(token);
-                    }
+                    else
+                         if (!flagsToExclude.contains(token)) {
+                              result.add(token);
+                         }
                }
           }
 

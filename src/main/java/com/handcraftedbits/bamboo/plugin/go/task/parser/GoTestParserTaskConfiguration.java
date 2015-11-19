@@ -19,21 +19,21 @@
  */
 package com.handcraftedbits.bamboo.plugin.go.task.parser;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.atlassian.bamboo.task.TaskContext;
 import com.handcraftedbits.bamboo.plugin.go.task.common.GoTaskConfiguration;
 import com.handcraftedbits.bamboo.plugin.go.task.common.GoTaskHelper;
-import org.jetbrains.annotations.NotNull;
 
 final class GoTestParserTaskConfiguration extends GoTaskConfiguration {
      static final String PARAM_PATTERN = "pattern";
 
-     public GoTestParserTaskConfiguration (@NotNull final GoTaskHelper taskHelper,
-          @NotNull final TaskContext taskContext) {
+     GoTestParserTaskConfiguration (@NotNull final GoTaskHelper taskHelper, @NotNull final TaskContext taskContext) {
           super(taskHelper, taskContext);
      }
 
      @NotNull
-     String getResultFilePattern () {
+          String getResultFilePattern () {
           return getTaskContext().getConfigurationMap().get(GoTestParserTaskConfiguration.PARAM_PATTERN);
      }
 }
