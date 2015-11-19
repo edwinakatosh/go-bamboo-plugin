@@ -64,7 +64,7 @@ public final class GoTestParserTaskType extends AbstractGoTaskType {
           return TaskResultBuilder.newBuilder(taskContext).checkTestFailures().build();
      }
 
-     private class GoTestReportCollector implements TestReportCollector {
+     private static class GoTestReportCollector implements TestReportCollector {
           @NotNull
           @Override
           public TestCollectionResult collect (@NotNull final File file) throws Exception {

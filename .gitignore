@@ -4,6 +4,7 @@ bin/
 target/
 
 .DS_Store
+.checkstyle
 .classpath
 .project
 *.iml

@@ -22,6 +22,7 @@ package com.handcraftedbits.bamboo.plugin.go.covermerge;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import org.jsoup.Jsoup;
@@ -69,7 +70,7 @@ public final class CoverMerge {
      public static String mergeCoverageFiles (final InputStream... inputStreams) throws IOException {
           int count = 0;
           final Element divElement;
-          final Document documents[] = new Document[inputStreams.length];
+          final Document[] documents = new Document[inputStreams.length];
           final Map<String, String> fileContents = new TreeMap<>();
           final Element selectElement;
 
@@ -99,11 +100,12 @@ public final class CoverMerge {
 
           divElement.children().remove();
           selectElement.children().remove();
-
-          for (final String key : fileContents.keySet()) {
-               divElement.append(String.format("<pre class=\"file\" id=\"file%d\"%s>%s\n</pre>", count,
-                    count == 0 ? "" : "style=\"display:none\"", fileContents.get(key)));
-               selectElement.append(String.format("<option value=\"file%d\">%s</option>\n", count++, key));
+          
+          for (final Entry<String, String> fileContent : fileContents.entrySet()) {
+               divElement.append(String.format("<pre class=\"file\" id=\"file%d\"%s>%s%n</pre>", count,
+                    count == 0 ? "" : "style=\"display:none\"", fileContent.getValue()));
+               selectElement.append(String.format("<option value=\"file%d\">%s</option>%n", count++,
+                    fileContent.getKey()));
           }
 
           return documents[0].toString();

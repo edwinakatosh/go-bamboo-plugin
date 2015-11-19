@@ -21,10 +21,11 @@ package com.handcraftedbits.bamboo.plugin.go.task.test;
 
 import java.util.HashSet;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.atlassian.bamboo.task.TaskContext;
 import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackageAwareTaskConfiguration;
 import com.handcraftedbits.bamboo.plugin.go.task.common.GoTaskHelper;
-import org.jetbrains.annotations.NotNull;
 
 final class GoTestTaskConfiguration extends GoPackageAwareTaskConfiguration {
      static final String PARAM_LOG_OUTPUT_PATH = "logOutputPath";
@@ -36,12 +37,12 @@ final class GoTestTaskConfiguration extends GoPackageAwareTaskConfiguration {
           GoTestTaskConfiguration.flagsToExclude.add("-v");
      }
 
-     public GoTestTaskConfiguration (@NotNull final GoTaskHelper taskHelper, @NotNull final TaskContext taskContext) {
+     GoTestTaskConfiguration (@NotNull final GoTaskHelper taskHelper, @NotNull final TaskContext taskContext) {
           super(taskHelper, taskContext);
      }
 
      @NotNull
-     String getLogOutputPath () {
+          String getLogOutputPath () {
           return getTaskContext().getConfigurationMap().get(GoTestTaskConfiguration.PARAM_LOG_OUTPUT_PATH);
      }
 

@@ -23,14 +23,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
+
 import com.atlassian.bamboo.v2.build.agent.capability.AbstractExecutableCapabilityTypeModule;
 import com.atlassian.bamboo.v2.build.agent.capability.AbstractMultipleExecutableCapabilityTypeModule;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityDefaultsHelper;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilitySet;
 import com.google.common.collect.Lists;
 import com.handcraftedbits.bamboo.plugin.go.util.Constants;
-import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 
 public final class GoCapabilityTypeModule extends AbstractMultipleExecutableCapabilityTypeModule {
      public static final String CAPABILITY_KEY_GO = "capability.go";
@@ -81,8 +82,8 @@ public final class GoCapabilityTypeModule extends AbstractMultipleExecutableCapa
 
      @Override
      public String getExecutableDescription (final String key) {
-          return getText(AbstractExecutableCapabilityTypeModule.AGENT_CAPABILITY_TYPE_PREFIX + key +
-               ".field.description");
+          return getText(
+               AbstractExecutableCapabilityTypeModule.AGENT_CAPABILITY_TYPE_PREFIX + key + ".field.description");
      }
 
      @Override
@@ -103,8 +104,8 @@ public final class GoCapabilityTypeModule extends AbstractMultipleExecutableCapa
      @NotNull
      @Override
      public Map<String, String> validate (@NotNull final Map<String, String[]> params) {
-          final String executableKind[] = params.get(GoCapabilityTypeModule.EXECUTABLE_KIND_KEY);
-          final String executableValue[];
+          final String[] executableKind = params.get(GoCapabilityTypeModule.EXECUTABLE_KIND_KEY);
+          final String[] executableValue;
           final Map<String, String> result = super.validate(params);
 
           // Override since the default implementation doesn't handle multiple executable types.
@@ -120,8 +121,8 @@ public final class GoCapabilityTypeModule extends AbstractMultipleExecutableCapa
           }
 
           if (StringUtils.isEmpty(executableValue[0])) {
-               result.put(GoCapabilityTypeModule.CAPABILITY_KEY_GO, getText(executableKind[0] +
-                    ".error.undefinedExecutable"));
+               result.put(GoCapabilityTypeModule.CAPABILITY_KEY_GO,
+                    getText(executableKind[0] + ".error.undefinedExecutable"));
           }
 
           return result;

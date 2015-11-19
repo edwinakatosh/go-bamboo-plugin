@@ -39,7 +39,7 @@ final class FileOutputHandler extends BaseOutputHandler {
      @Override
      public void process (@NotNull final InputStream output) throws ProcessException {
           try (final FileOutputStream fileOutput = new FileOutputStream(this.file, true)) {
-        	  IOUtils.copy(output, fileOutput);
+               IOUtils.copy(output, fileOutput);
           }
 
           catch (final IOException e) {
