@@ -21,8 +21,8 @@ package com.handcraftedbits.bamboo.plugin.go.task.common;
 
 import java.util.HashSet;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public final class GoPackageDefinitionTest {
      @Test

@@ -22,12 +22,13 @@ package com.handcraftedbits.bamboo.plugin.go.parser;
 import java.io.InputStream;
 import java.util.List;
 
+import org.jetbrains.annotations.NotNull;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
 import com.handcraftedbits.bamboo.plugin.go.model.PackageTestResults;
 import com.handcraftedbits.bamboo.plugin.go.model.SingleTestResult;
 import com.handcraftedbits.bamboo.plugin.go.model.TestStatus;
-import org.jetbrains.annotations.NotNull;
-import org.junit.Assert;
-import org.junit.Test;
 
 public final class GoTestParserTest {
      private InputStream getOutputResource (@NotNull final String name) {

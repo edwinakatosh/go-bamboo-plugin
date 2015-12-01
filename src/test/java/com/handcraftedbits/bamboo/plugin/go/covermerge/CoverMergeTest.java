@@ -24,16 +24,14 @@ import java.io.InputStream;
 import org.apache.commons.io.IOUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.select.Elements;
-import org.junit.Assert;
-import org.junit.Test;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public final class CoverMergeTest {
      @Test
      public void testMergeMissingCodeBlock () throws Exception {
-          final InputStream inputStreams[] = new InputStream[] {
-               getCoverOutputResource("error_missingCodeBlock.html"),
-               getCoverOutputResource("strings.html")
-          };
+          final InputStream inputStreams[] = new InputStream[] { getCoverOutputResource("error_missingCodeBlock.html"),
+               getCoverOutputResource("strings.html") };
 
           try {
                final Elements codeBlocks;
@@ -54,10 +52,8 @@ public final class CoverMergeTest {
 
      @Test
      public void testMergeMissingContent () throws Exception {
-          final InputStream inputStreams[] = new InputStream[] {
-               getCoverOutputResource("error_missingContent.html"),
-               getCoverOutputResource("strings.html")
-          };
+          final InputStream inputStreams[] = new InputStream[] { getCoverOutputResource("error_missingContent.html"),
+               getCoverOutputResource("strings.html") };
           final String originalContents;
 
           try (final InputStream inputStream = getCoverOutputResource("error_missingContent.html")) {
@@ -77,10 +73,8 @@ public final class CoverMergeTest {
 
      @Test
      public void testMergeMissingFilename () throws Exception {
-          final InputStream inputStreams[] = new InputStream[] {
-               getCoverOutputResource("error_missingFilename.html"),
-               getCoverOutputResource("strings.html")
-          };
+          final InputStream inputStreams[] = new InputStream[] { getCoverOutputResource("error_missingFilename.html"),
+               getCoverOutputResource("strings.html") };
 
           try {
                final Elements filenames;
@@ -102,10 +96,8 @@ public final class CoverMergeTest {
 
      @Test
      public void testMergeMissingFiles () throws Exception {
-          final InputStream inputStreams[] = new InputStream[] {
-               getCoverOutputResource("error_missingFiles.html"),
-               getCoverOutputResource("strings.html")
-          };
+          final InputStream inputStreams[] = new InputStream[] { getCoverOutputResource("error_missingFiles.html"),
+               getCoverOutputResource("strings.html") };
           final String originalContents;
 
           try (final InputStream inputStream = getCoverOutputResource("error_missingFiles.html")) {
@@ -140,11 +132,8 @@ public final class CoverMergeTest {
 
      @Test
      public void testMergeSuccessful () throws Exception {
-          final InputStream inputStreams[] = new InputStream[] {
-               getCoverOutputResource("sort.html"),
-               getCoverOutputResource("strings.html"),
-               getCoverOutputResource("time.html")
-          };
+          final InputStream inputStreams[] = new InputStream[] { getCoverOutputResource("sort.html"),
+               getCoverOutputResource("strings.html"), getCoverOutputResource("time.html") };
 
           try {
                final String expected = IOUtils.toString(getCoverOutputResource("merged.html"), "UTF-8");

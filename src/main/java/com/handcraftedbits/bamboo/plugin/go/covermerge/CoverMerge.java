@@ -37,7 +37,7 @@ public final class CoverMerge {
      private static void extractCoveredFiles (final Document document, final Map<String, String> fileContents) {
           final Elements elements;
 
-          // Find the dropdown, which contains a mapping of element IDs to filenames.  The form we're looking for is:
+          // Find the dropdown, which contains a mapping of element IDs to filenames. The form we're looking for is:
           // <option value="id">filename.go (xx.x%)</option>
 
           elements = document.select("select#files > option");
@@ -88,7 +88,7 @@ public final class CoverMerge {
                CoverMerge.extractCoveredFiles(document, fileContents);
           }
 
-          // Reuse the first document by stripping out the existing <select> options and <pre> code blocks.  Then we'll
+          // Reuse the first document by stripping out the existing <select> options and <pre> code blocks. Then we'll
           // add in the merged set of files.
 
           divElement = documents[0].select("div#content").first();
@@ -100,14 +100,14 @@ public final class CoverMerge {
 
           divElement.children().remove();
           selectElement.children().remove();
-          
+
           for (final Entry<String, String> fileContent : fileContents.entrySet()) {
                divElement.append(String.format("<pre class=\"file\" id=\"file%d\"%s>%s%n</pre>", count,
                     count == 0 ? "" : "style=\"display:none\"", fileContent.getValue()));
-               selectElement.append(String.format("<option value=\"file%d\">%s</option>%n", count++,
-                    fileContent.getKey()));
+               selectElement
+                    .append(String.format("<option value=\"file%d\">%s</option>%n", count++, fileContent.getKey()));
           }
 
-          return documents[0].toString();
+          return documents[0].toString().replace("\r", "");
      }
 }
