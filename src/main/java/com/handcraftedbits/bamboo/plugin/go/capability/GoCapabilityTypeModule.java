@@ -82,8 +82,8 @@ public final class GoCapabilityTypeModule extends AbstractMultipleExecutableCapa
 
      @Override
      public String getExecutableDescription (final String key) {
-          return getText(
-               AbstractExecutableCapabilityTypeModule.AGENT_CAPABILITY_TYPE_PREFIX + key + ".field.description");
+          return getText(AbstractExecutableCapabilityTypeModule.AGENT_CAPABILITY_TYPE_PREFIX + key +
+               ".field.description");
      }
 
      @Override
@@ -121,8 +121,8 @@ public final class GoCapabilityTypeModule extends AbstractMultipleExecutableCapa
           }
 
           if (StringUtils.isEmpty(executableValue[0])) {
-               result.put(GoCapabilityTypeModule.CAPABILITY_KEY_GO,
-                    getText(executableKind[0] + ".error.undefinedExecutable"));
+               result.put(GoCapabilityTypeModule.CAPABILITY_KEY_GO, getText(executableKind[0] +
+                    ".error.undefinedExecutable"));
           }
 
           return result;

@@ -33,8 +33,8 @@ public class GoPackageAwareTaskConfiguration extends GoTaskConfiguration {
 
      @NotNull
      public Map<String, String> getEnvironmentVariables () {
-          return getTaskHelper().getEnvironmentVariableAccessor().splitEnvironmentAssignments
-               (getTaskContext().getConfigurationMap().get(TaskConfigConstants.CFG_ENVIRONMENT_VARIABLES), false);
+          return getTaskHelper().getEnvironmentVariableAccessor().splitEnvironmentAssignments(getTaskContext()
+               .getConfigurationMap().get(TaskConfigConstants.CFG_ENVIRONMENT_VARIABLES), false);
      }
 
      @NotNull

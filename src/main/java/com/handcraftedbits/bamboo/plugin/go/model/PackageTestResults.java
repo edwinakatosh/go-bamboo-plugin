@@ -97,10 +97,7 @@ public final class PackageTestResults {
                }
           }
 
-          return new TestCollectionResultBuilder()
-               .addFailedTestResults(failedTests)
-               .addSkippedTestResults(skippedTests)
-               .addSuccessfulTestResults(successfulTests)
-               .build();
+          return new TestCollectionResultBuilder().addFailedTestResults(failedTests).addSkippedTestResults(skippedTests)
+               .addSuccessfulTestResults(successfulTests).build();
      }
 }

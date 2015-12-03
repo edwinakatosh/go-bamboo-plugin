@@ -102,10 +102,10 @@ public final class CoverMerge {
           selectElement.children().remove();
 
           for (final Entry<String, String> fileContent : fileContents.entrySet()) {
-               divElement.append(String.format("<pre class=\"file\" id=\"file%d\"%s>%s%n</pre>", count,
-                    count == 0 ? "" : "style=\"display:none\"", fileContent.getValue()));
-               selectElement
-                    .append(String.format("<option value=\"file%d\">%s</option>%n", count++, fileContent.getKey()));
+               divElement.append(String.format("<pre class=\"file\" id=\"file%d\"%s>%s%n</pre>", count, count == 0 ? ""
+                    : "style=\"display:none\"", fileContent.getValue()));
+               selectElement.append(String.format("<option value=\"file%d\">%s</option>%n", count++, fileContent
+                    .getKey()));
           }
 
           return documents[0].toString().replace("\r", "");

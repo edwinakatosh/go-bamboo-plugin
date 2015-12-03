@@ -25,6 +25,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import com.atlassian.bamboo.collections.ActionParametersMap;
 import com.atlassian.bamboo.process.EnvironmentVariableAccessor;
 import com.atlassian.bamboo.task.AbstractTaskConfigurator;
@@ -35,9 +39,6 @@ import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
 import com.atlassian.bamboo.v2.build.agent.capability.Requirement;
 import com.atlassian.bamboo.v2.build.agent.capability.RequirementImpl;
 import com.atlassian.struts.TextProvider;
-import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public abstract class AbstractGoTaskConfigurator extends AbstractTaskConfigurator implements TaskRequirementSupport {
      private final HashMap<String, ParameterInfo> parameters;
@@ -90,7 +91,6 @@ public abstract class AbstractGoTaskConfigurator extends AbstractTaskConfigurato
           return config;
      }
 
-     @NotNull
      GoTaskHelper getTaskHelper () {
           return this.taskHelper;
      }
@@ -98,7 +98,7 @@ public abstract class AbstractGoTaskConfigurator extends AbstractTaskConfigurato
      @Override
      public void populateContextForCreate (@NotNull final Map<String, Object> context) {
           super.populateContextForCreate(context);
-          
+
           for (final Entry<String, ParameterInfo> param : this.parameters.entrySet()) {
                context.put(param.getKey(), param.getValue().getDefaultValue());
           }
@@ -117,11 +117,11 @@ public abstract class AbstractGoTaskConfigurator extends AbstractTaskConfigurato
      @Override
      public void validate (@NotNull final ActionParametersMap params, @NotNull final ErrorCollection errorCollection) {
           super.validate(params, errorCollection);
-          
+
           for (final Entry<String, ParameterInfo> param : this.parameters.entrySet()) {
                if (param.getValue().isRequired() && StringUtils.isBlank(params.getString(param.getKey()))) {
-                    errorCollection.addError(param.getKey(), this.taskHelper.getText
-                         (param.getValue().getErrorMessage()));
+                    errorCollection.addError(param.getKey(), this.taskHelper.getText(param.getValue()
+                         .getErrorMessage()));
                }
           }
      }

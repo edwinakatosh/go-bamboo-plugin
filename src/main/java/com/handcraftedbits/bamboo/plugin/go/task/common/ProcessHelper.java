@@ -41,13 +41,13 @@ public final class ProcessHelper {
      }
 
      public OutputHandler createStandardErrorHandler () {
-          return new ErrorStreamToBuildLoggerOutputHandler(this.taskContext.getBuildLogger(),
-               this.taskContext.getCommonContext().getResultKey());
+          return new ErrorStreamToBuildLoggerOutputHandler(this.taskContext.getBuildLogger(), this.taskContext
+               .getCommonContext().getResultKey());
      }
 
      public OutputHandler createStandardOutputHandler () {
-          return new StreamToBuildLoggerOutputHandler(this.taskContext.getBuildLogger(),
-               this.taskContext.getCommonContext().getResultKey());
+          return new StreamToBuildLoggerOutputHandler(this.taskContext.getBuildLogger(), this.taskContext
+               .getCommonContext().getResultKey());
      }
 
      public ExternalProcess executeProcess (@NotNull final List<String> commandLine,
@@ -64,10 +64,9 @@ public final class ProcessHelper {
      public ExternalProcess executeProcess (@NotNull final List<String> commandLine,
           @Nullable final String workingDirectory, @Nullable final Map<String, String> environment,
           @NotNull final OutputHandler stdoutHandler, @NotNull final OutputHandler stderrHandler) {
-          final ExternalProcessBuilder builder = new ExternalProcessBuilder()
-               .env(Constants.EnvironmentVariable.GOPATH, this.taskContext.getWorkingDirectory().getAbsolutePath())
-               .env(Constants.EnvironmentVariable.GOROOT, this.taskContext.getConfigurationMap().get
-                    (AbstractGoExecutableTaskConfigurator.CONFIG_GOROOT));
+          final ExternalProcessBuilder builder = new ExternalProcessBuilder().env(Constants.EnvironmentVariable.GOPATH,
+               this.taskContext.getWorkingDirectory().getAbsolutePath()).env(Constants.EnvironmentVariable.GOROOT,
+                    this.taskContext.getConfigurationMap().get(AbstractGoExecutableTaskConfigurator.CONFIG_GOROOT));
           final ExternalProcess process;
 
           if (workingDirectory != null) {

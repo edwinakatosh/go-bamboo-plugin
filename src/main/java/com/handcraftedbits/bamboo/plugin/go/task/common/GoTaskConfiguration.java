@@ -19,10 +19,11 @@
  */
 package com.handcraftedbits.bamboo.plugin.go.task.common;
 
-import com.atlassian.bamboo.task.TaskContext;
-import com.handcraftedbits.bamboo.plugin.go.capability.GoCapabilityTypeModule;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import com.atlassian.bamboo.task.TaskContext;
+import com.handcraftedbits.bamboo.plugin.go.capability.GoCapabilityTypeModule;
 
 public class GoTaskConfiguration {
      private final TaskContext taskContext;
@@ -53,7 +54,6 @@ public class GoTaskConfiguration {
           return this.taskContext;
      }
 
-     @NotNull
      GoTaskHelper getTaskHelper () {
           return this.taskHelper;
      }

@@ -44,7 +44,7 @@ public final class GoTestParser {
           final Stack<SingleTestResult> testResults = new Stack<>();
 
           for (final String line : lines) {
-               // A test has finished.  Parse it out and push it on the stack until we know which package it belongs to.
+               // A test has finished. Parse it out and push it on the stack until we know which package it belongs to.
 
                if (line.startsWith("---")) {
                     final Matcher matcher = GoTestParser.patternTestFinish.matcher(line);
@@ -73,8 +73,8 @@ public final class GoTestParser {
                          }
 
                          if (status != null) {
-                              testResults.push(new SingleTestResult(matcher.group(2), status, Double.parseDouble
-                                   (matcher.group(3))));
+                              testResults.push(new SingleTestResult(matcher.group(2), status, Double.parseDouble(matcher
+                                   .group(3))));
                          }
                     }
                }
@@ -90,7 +90,7 @@ public final class GoTestParser {
                          final PackageTestResults packageResults = new PackageTestResults(matcher.group(2));
 
                          // In this case, either the go test run did not specify -v or there are no tests in the
-                         // package.  We'll create a single "AllTests" test and assign it the correct status.  In the
+                         // package. We'll create a single "AllTests" test and assign it the correct status. In the
                          // case of no tests existing for the package, the status will be "skipped".
 
                          if (testResults.empty()) {
@@ -110,7 +110,7 @@ public final class GoTestParser {
 
                                         break;
                                    }
-                                   
+
                                    default: {
                                         testStatus = TestStatus.SKIPPED;
                                    }

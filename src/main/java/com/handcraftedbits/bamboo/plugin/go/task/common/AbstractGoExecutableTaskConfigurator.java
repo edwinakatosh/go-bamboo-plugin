@@ -62,7 +62,7 @@ public abstract class AbstractGoExecutableTaskConfigurator extends AbstractGoTas
                return goRootEnv.trim();
           }
 
-          // See if the Go capability has been defined.  If so, we can use <path_to_go_executable>/.. as a best guess
+          // See if the Go capability has been defined. If so, we can use <path_to_go_executable>/.. as a best guess
           // for the correct GOROOT path.
 
           goPath = getTaskHelper().getCapabilityValue(GoCapabilityTypeModule.CAPABILITY_KEY_GO);

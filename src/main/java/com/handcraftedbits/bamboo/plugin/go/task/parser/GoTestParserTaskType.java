@@ -76,9 +76,8 @@ public final class GoTestParserTaskType extends AbstractGoTaskType {
                for (final PackageTestResults packageTestResults : testResults) {
                     final TestCollectionResult curResult = packageTestResults.toTestCollectionResult();
 
-                    builder.addFailedTestResults(curResult.getFailedTestResults())
-                         .addSkippedTestResults(curResult.getSkippedTestResults())
-                         .addSuccessfulTestResults(curResult.getSuccessfulTestResults());
+                    builder.addFailedTestResults(curResult.getFailedTestResults()).addSkippedTestResults(curResult
+                         .getSkippedTestResults()).addSuccessfulTestResults(curResult.getSuccessfulTestResults());
                }
 
                return builder.build();

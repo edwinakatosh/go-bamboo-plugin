@@ -59,8 +59,8 @@ public final class GoBuildTaskType extends AbstractGoTaskType {
                commandLine.add("install");
                commandLine.addAll(pkg.getCommandLine(null));
 
-               process = processHelper.executeProcess(commandLine, configuration.getSourcePath(),
-                    configuration.getEnvironmentVariables());
+               process = processHelper.executeProcess(commandLine, configuration.getSourcePath(), configuration
+                    .getEnvironmentVariables());
 
                if (process.getHandler().getExitCode() != 0) {
                     return TaskResultBuilder.newBuilder(taskContext).checkReturnCode(process, 0).build();

@@ -86,17 +86,16 @@ public final class GoTestTaskType extends AbstractGoTaskType {
                commandLine.addAll(pkg.getCommandLine(GoTestTaskConfiguration.flagsToExclude));
 
                if (configuration.shouldLogOutputToBuild()) {
-                    process = processHelper.executeProcess(commandLine, configuration.getSourcePath(),
-                         configuration.getEnvironmentVariables(),
-                         new CompositeOutputHandler(taskContext.getBuildLogger(),
+                    process = processHelper.executeProcess(commandLine, configuration.getSourcePath(), configuration
+                         .getEnvironmentVariables(), new CompositeOutputHandler(taskContext.getBuildLogger(),
                               processHelper.createStandardOutputHandler(), fileOutputHandler),
-                         new CompositeOutputHandler(taskContext.getBuildLogger(),
-                              processHelper.createStandardErrorHandler(), fileOutputHandler));
+                         new CompositeOutputHandler(taskContext.getBuildLogger(), processHelper
+                              .createStandardErrorHandler(), fileOutputHandler));
                }
 
                else {
-                    process = processHelper.executeProcess(commandLine, configuration.getSourcePath(),
-                         configuration.getEnvironmentVariables(), fileOutputHandler, fileOutputHandler);
+                    process = processHelper.executeProcess(commandLine, configuration.getSourcePath(), configuration
+                         .getEnvironmentVariables(), fileOutputHandler, fileOutputHandler);
                }
 
                if (process.getHandler().getExitCode() != 0) {
