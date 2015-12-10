@@ -35,7 +35,7 @@
   <parent>
     <groupId>com.handcraftedbits</groupId>
     <artifactId>handcraftedbits-parent-java</artifactId>
-    <version>1.0.4</version>
+    <version>1.1.0</version>
   </parent>
 
   <scm>
@@ -49,6 +49,9 @@
   </issueManagement>
 
   <properties>
+    <coverage.skip>true</coverage.skip>
+    <javadoc.skip>true</javadoc.skip>
+    
     <version.dep.bamboo>5.2</version.dep.bamboo>
     <version.dep.jsoup>1.8.3</version.dep.jsoup>
 
@@ -94,32 +97,18 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>src/main/resources/**/*.css</include>
+            <include>src/main/resources/**/*.js</include>
+          </includes>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>update-copyright</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>license-maven-plugin</artifactId>
-            <configuration>
-              <includes>
-                <include>src/main/resources/**/*.css</include>
-                <include>src/main/resources/**/*.js</include>
-              </includes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
   <repositories>
     <repository>
