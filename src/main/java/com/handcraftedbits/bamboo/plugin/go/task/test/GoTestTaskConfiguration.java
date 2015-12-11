@@ -42,7 +42,7 @@ final class GoTestTaskConfiguration extends GoPackageAwareTaskConfiguration {
      }
 
      @NotNull
-          String getLogOutputPath () {
+     String getLogOutputPath () {
           return getTaskContext().getConfigurationMap().get(GoTestTaskConfiguration.PARAM_LOG_OUTPUT_PATH);
      }
 

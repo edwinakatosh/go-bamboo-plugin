@@ -33,7 +33,7 @@ final class GoTestParserTaskConfiguration extends GoTaskConfiguration {
      }
 
      @NotNull
-          String getResultFilePattern () {
+     String getResultFilePattern () {
           return getTaskContext().getConfigurationMap().get(GoTestParserTaskConfiguration.PARAM_PATTERN);
      }
 }
