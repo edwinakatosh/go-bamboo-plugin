@@ -120,8 +120,8 @@ public abstract class AbstractGoTaskConfigurator extends AbstractTaskConfigurato
 
           for (final Entry<String, ParameterInfo> param : this.parameters.entrySet()) {
                if (param.getValue().isRequired() && StringUtils.isBlank(params.getString(param.getKey()))) {
-                    errorCollection.addError(param.getKey(), this.taskHelper.getText(param.getValue()
-                         .getErrorMessage()));
+                    errorCollection.addError(param.getKey(), this.taskHelper.getText(
+                         param.getValue().getErrorMessage()));
                }
           }
      }

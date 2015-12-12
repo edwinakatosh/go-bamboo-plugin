@@ -87,10 +87,11 @@ public final class GoPackageDefinition implements Serializable {
                          result.add(token);
                     }
 
-                    else
+                    else {
                          if (!flagsToExclude.contains(token)) {
                               result.add(token);
                          }
+                    }
                }
           }
 

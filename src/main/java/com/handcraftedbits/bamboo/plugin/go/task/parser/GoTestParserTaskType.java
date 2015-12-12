@@ -25,6 +25,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.atlassian.bamboo.build.test.TestCollationService;
 import com.atlassian.bamboo.build.test.TestCollectionResult;
 import com.atlassian.bamboo.build.test.TestCollectionResultBuilder;
@@ -39,7 +41,6 @@ import com.atlassian.struts.TextProvider;
 import com.handcraftedbits.bamboo.plugin.go.model.PackageTestResults;
 import com.handcraftedbits.bamboo.plugin.go.parser.GoTestParser;
 import com.handcraftedbits.bamboo.plugin.go.task.common.AbstractGoTaskType;
-import org.jetbrains.annotations.NotNull;
 
 public final class GoTestParserTaskType extends AbstractGoTaskType {
      private final TestCollationService testCollationService;
@@ -76,8 +77,9 @@ public final class GoTestParserTaskType extends AbstractGoTaskType {
                for (final PackageTestResults packageTestResults : testResults) {
                     final TestCollectionResult curResult = packageTestResults.toTestCollectionResult();
 
-                    builder.addFailedTestResults(curResult.getFailedTestResults()).addSkippedTestResults(curResult
-                         .getSkippedTestResults()).addSuccessfulTestResults(curResult.getSuccessfulTestResults());
+                    builder.addFailedTestResults(curResult.getFailedTestResults())
+                         .addSkippedTestResults(curResult.getSkippedTestResults())
+                         .addSuccessfulTestResults(curResult.getSuccessfulTestResults());
                }
 
                return builder.build();

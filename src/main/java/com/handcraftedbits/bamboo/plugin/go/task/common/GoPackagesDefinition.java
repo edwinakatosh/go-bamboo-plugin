@@ -92,8 +92,8 @@ public final class GoPackagesDefinition implements Iterable<GoPackageDefinition>
           for (final GoPackageDefinition packageDefinition : this.packages) {
                context.put(GoPackagesDefinition.PARAM_PACKAGENAME_PREFIX + packageDefinition.getIndex(),
                     packageDefinition.getName());
-               context.put(GoPackagesDefinition.PARAM_FLAGS_PREFIX + packageDefinition.getIndex(), packageDefinition
-                    .getFlags());
+               context.put(GoPackagesDefinition.PARAM_FLAGS_PREFIX + packageDefinition.getIndex(),
+                    packageDefinition.getFlags());
           }
      }
 

@@ -26,10 +26,11 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.IOUtils;
+
 import com.handcraftedbits.bamboo.plugin.go.model.PackageTestResults;
 import com.handcraftedbits.bamboo.plugin.go.model.SingleTestResult;
 import com.handcraftedbits.bamboo.plugin.go.model.TestStatus;
-import org.apache.commons.io.IOUtils;
 
 public final class GoTestParser {
      private static final Pattern patternPackageFinish = Pattern.compile("^(\\?   |ok  |FAIL)\t([^\t]+)\t(.*)$");
@@ -73,8 +74,8 @@ public final class GoTestParser {
                          }
 
                          if (status != null) {
-                              testResults.push(new SingleTestResult(matcher.group(2), status, Double.parseDouble(matcher
-                                   .group(3))));
+                              testResults.push(new SingleTestResult(matcher.group(2), status, Double.parseDouble(
+                                   matcher.group(3))));
                          }
                     }
                }

@@ -23,6 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedList;
 
+import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
+
 import com.atlassian.bamboo.process.EnvironmentVariableAccessor;
 import com.atlassian.bamboo.task.TaskContext;
 import com.atlassian.bamboo.task.TaskException;
@@ -35,8 +38,6 @@ import com.handcraftedbits.bamboo.plugin.go.task.common.AbstractGoTaskType;
 import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackageDefinition;
 import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackagesDefinition;
 import com.handcraftedbits.bamboo.plugin.go.task.common.ProcessHelper;
-import org.apache.commons.io.FileUtils;
-import org.jetbrains.annotations.NotNull;
 
 public final class GoTestTaskType extends AbstractGoTaskType {
      public GoTestTaskType (@NotNull final CapabilityContext capabilityContext,
@@ -86,16 +87,17 @@ public final class GoTestTaskType extends AbstractGoTaskType {
                commandLine.addAll(pkg.getCommandLine(GoTestTaskConfiguration.flagsToExclude));
 
                if (configuration.shouldLogOutputToBuild()) {
-                    process = processHelper.executeProcess(commandLine, configuration.getSourcePath(), configuration
-                         .getEnvironmentVariables(), new CompositeOutputHandler(taskContext.getBuildLogger(),
-                              processHelper.createStandardOutputHandler(), fileOutputHandler),
-                         new CompositeOutputHandler(taskContext.getBuildLogger(), processHelper
-                              .createStandardErrorHandler(), fileOutputHandler));
+                    process = processHelper.executeProcess(commandLine, configuration.getSourcePath(),
+                         configuration.getEnvironmentVariables(), new CompositeOutputHandler(
+                              taskContext.getBuildLogger(), processHelper.createStandardOutputHandler(),
+                              fileOutputHandler),
+                         new CompositeOutputHandler(taskContext.getBuildLogger(),
+                              processHelper.createStandardErrorHandler(), fileOutputHandler));
                }
 
                else {
-                    process = processHelper.executeProcess(commandLine, configuration.getSourcePath(), configuration
-                         .getEnvironmentVariables(), fileOutputHandler, fileOutputHandler);
+                    process = processHelper.executeProcess(commandLine, configuration.getSourcePath(),
+                         configuration.getEnvironmentVariables(), fileOutputHandler, fileOutputHandler);
                }
 
                if (process.getHandler().getExitCode() != 0) {

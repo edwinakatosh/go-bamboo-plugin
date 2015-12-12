@@ -22,12 +22,14 @@ package com.handcraftedbits.bamboo.plugin.go.model;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.atlassian.bamboo.build.test.TestCollectionResult;
 import com.atlassian.bamboo.build.test.TestCollectionResultBuilder;
 import com.atlassian.bamboo.results.tests.TestResults;
 import com.atlassian.bamboo.resultsummary.tests.TestState;
+
 import edu.emory.mathcs.backport.java.util.Collections;
-import org.jetbrains.annotations.NotNull;
 
 public final class PackageTestResults {
      private final String name;
@@ -97,7 +99,10 @@ public final class PackageTestResults {
                }
           }
 
-          return new TestCollectionResultBuilder().addFailedTestResults(failedTests).addSkippedTestResults(skippedTests)
-               .addSuccessfulTestResults(successfulTests).build();
+          return new TestCollectionResultBuilder()
+               .addFailedTestResults(failedTests)
+               .addSkippedTestResults(skippedTests)
+               .addSuccessfulTestResults(successfulTests)
+               .build();
      }
 }

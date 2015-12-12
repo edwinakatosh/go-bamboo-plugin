@@ -21,6 +21,8 @@ package com.handcraftedbits.bamboo.plugin.go.task.build;
 
 import java.util.LinkedList;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.atlassian.bamboo.process.EnvironmentVariableAccessor;
 import com.atlassian.bamboo.task.TaskContext;
 import com.atlassian.bamboo.task.TaskException;
@@ -34,7 +36,6 @@ import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackageAwareTaskConfig
 import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackageDefinition;
 import com.handcraftedbits.bamboo.plugin.go.task.common.GoPackagesDefinition;
 import com.handcraftedbits.bamboo.plugin.go.task.common.ProcessHelper;
-import org.jetbrains.annotations.NotNull;
 
 public final class GoBuildTaskType extends AbstractGoTaskType {
      public GoBuildTaskType (@NotNull final CapabilityContext capabilityContext,
@@ -59,8 +60,8 @@ public final class GoBuildTaskType extends AbstractGoTaskType {
                commandLine.add("install");
                commandLine.addAll(pkg.getCommandLine(null));
 
-               process = processHelper.executeProcess(commandLine, configuration.getSourcePath(), configuration
-                    .getEnvironmentVariables());
+               process = processHelper.executeProcess(commandLine, configuration.getSourcePath(),
+                    configuration.getEnvironmentVariables());
 
                if (process.getHandler().getExitCode() != 0) {
                     return TaskResultBuilder.newBuilder(taskContext).checkReturnCode(process, 0).build();
