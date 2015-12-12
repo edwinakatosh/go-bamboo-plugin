@@ -100,6 +100,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>license-maven-plugin</artifactId>
+        <version>${version.plugin.license}</version>
         <configuration>
           <includes>
             <include>src/main/resources/**/*.css</include>
