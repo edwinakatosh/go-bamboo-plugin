@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 HandcraftedBits
+ * Copyright (C) 2015-2017 HandcraftedBits
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ public final class GoTestParser {
                          if (testResults.empty()) {
                               double duration = 0.0d;
                               final String durationStr = matcher.group(3);
-                              TestStatus testStatus;
+                              final TestStatus testStatus;
 
                               switch (matcher.group(1)) {
                                    case "FAIL": {

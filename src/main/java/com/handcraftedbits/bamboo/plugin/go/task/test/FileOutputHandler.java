@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 HandcraftedBits
+ * Copyright (C) 2015-2017 HandcraftedBits
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import com.atlassian.utils.process.BaseOutputHandler;
-import com.atlassian.utils.process.ProcessException;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
+
+import com.atlassian.utils.process.BaseOutputHandler;
+import com.atlassian.utils.process.ProcessException;
 
 final class FileOutputHandler extends BaseOutputHandler {
      private final File file;
@@ -34,7 +35,7 @@ final class FileOutputHandler extends BaseOutputHandler {
 
      @Override
      public void process (@NotNull final InputStream output) throws ProcessException {
-          try (final FileOutputStream fileOutput = new FileOutputStream(this.file, true)) {
+          try (FileOutputStream fileOutput = new FileOutputStream(this.file, true)) {
                IOUtils.copy(output, fileOutput);
           }
 

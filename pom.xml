@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Copyright (C) 2015-2016 HandcraftedBits
+  Copyright (C) 2015-2017 HandcraftedBits
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@
     <coverage.skip>true</coverage.skip>
     <javadoc.skip>true</javadoc.skip>
     
-    <version.dep.bamboo>5.2</version.dep.bamboo>
+    <version.dep.bamboo>5.10.0</version.dep.bamboo>
     <version.dep.jsoup>1.8.3</version.dep.jsoup>
 
     <version.plugin.shade>2.4.1</version.plugin.shade>
