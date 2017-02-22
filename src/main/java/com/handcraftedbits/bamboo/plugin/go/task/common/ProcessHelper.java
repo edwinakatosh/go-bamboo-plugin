@@ -1,21 +1,17 @@
-/*
- * #%L
- * Go Plugin for Bamboo
- * %%
- * Copyright (C) 2015 HandcraftedBits
- * %%
+/**
+ * Copyright (C) 2015-2017 HandcraftedBits
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * #L%
  */
 package com.handcraftedbits.bamboo.plugin.go.task.common;
 
@@ -41,13 +37,13 @@ public final class ProcessHelper {
      }
 
      public OutputHandler createStandardErrorHandler () {
-          return new ErrorStreamToBuildLoggerOutputHandler(this.taskContext.getBuildLogger(),
-               this.taskContext.getCommonContext().getResultKey());
+          return new ErrorStreamToBuildLoggerOutputHandler(this.taskContext.getBuildLogger(), this.taskContext
+               .getCommonContext().getResultKey());
      }
 
      public OutputHandler createStandardOutputHandler () {
-          return new StreamToBuildLoggerOutputHandler(this.taskContext.getBuildLogger(),
-               this.taskContext.getCommonContext().getResultKey());
+          return new StreamToBuildLoggerOutputHandler(this.taskContext.getBuildLogger(), this.taskContext
+               .getCommonContext().getResultKey());
      }
 
      public ExternalProcess executeProcess (@NotNull final List<String> commandLine,
@@ -64,10 +60,9 @@ public final class ProcessHelper {
      public ExternalProcess executeProcess (@NotNull final List<String> commandLine,
           @Nullable final String workingDirectory, @Nullable final Map<String, String> environment,
           @NotNull final OutputHandler stdoutHandler, @NotNull final OutputHandler stderrHandler) {
-          final ExternalProcessBuilder builder = new ExternalProcessBuilder()
-               .env(Constants.EnvironmentVariable.GOPATH, this.taskContext.getWorkingDirectory().getAbsolutePath())
-               .env(Constants.EnvironmentVariable.GOROOT, this.taskContext.getConfigurationMap().get
-                    (AbstractGoExecutableTaskConfigurator.CONFIG_GOROOT));
+          final ExternalProcessBuilder builder = new ExternalProcessBuilder().env(Constants.EnvironmentVariable.GOPATH,
+               this.taskContext.getWorkingDirectory().getAbsolutePath()).env(Constants.EnvironmentVariable.GOROOT,
+                    this.taskContext.getConfigurationMap().get(AbstractGoExecutableTaskConfigurator.CONFIG_GOROOT));
           final ExternalProcess process;
 
           if (workingDirectory != null) {

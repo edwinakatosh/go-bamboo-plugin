@@ -1,21 +1,17 @@
-/*
- * #%L
- * Go Plugin for Bamboo
- * %%
- * Copyright (C) 2015 HandcraftedBits
- * %%
+/**
+ * Copyright (C) 2015-2017 HandcraftedBits
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * #L%
  */
 package com.handcraftedbits.bamboo.plugin.go.parser;
 
@@ -26,10 +22,11 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.IOUtils;
+
 import com.handcraftedbits.bamboo.plugin.go.model.PackageTestResults;
 import com.handcraftedbits.bamboo.plugin.go.model.SingleTestResult;
 import com.handcraftedbits.bamboo.plugin.go.model.TestStatus;
-import org.apache.commons.io.IOUtils;
 
 public final class GoTestParser {
      private static final Pattern patternPackageFinish = Pattern.compile("^(\\?   |ok  |FAIL)\t([^\t]+)\t(.*)$");
@@ -38,14 +35,13 @@ public final class GoTestParser {
      private GoTestParser () {
      }
 
-     @SuppressWarnings("unchecked")
      public static List<PackageTestResults> parseTests (final InputStream input) throws Exception {
           final List<String> lines = IOUtils.readLines(input, "UTF-8");
           final List<PackageTestResults> packageTestResults = new LinkedList<>();
           final Stack<SingleTestResult> testResults = new Stack<>();
 
           for (final String line : lines) {
-               // A test has finished.  Parse it out and push it on the stack until we know which package it belongs to.
+               // A test has finished. Parse it out and push it on the stack until we know which package it belongs to.
 
                if (line.startsWith("---")) {
                     final Matcher matcher = GoTestParser.patternTestFinish.matcher(line);
@@ -74,8 +70,8 @@ public final class GoTestParser {
                          }
 
                          if (status != null) {
-                              testResults.push(new SingleTestResult(matcher.group(2), status, Double.parseDouble
-                                   (matcher.group(3))));
+                              testResults.push(new SingleTestResult(matcher.group(2), status, Double.parseDouble(
+                                   matcher.group(3))));
                          }
                     }
                }
@@ -91,13 +87,13 @@ public final class GoTestParser {
                          final PackageTestResults packageResults = new PackageTestResults(matcher.group(2));
 
                          // In this case, either the go test run did not specify -v or there are no tests in the
-                         // package.  We'll create a single "AllTests" test and assign it the correct status.  In the
+                         // package. We'll create a single "AllTests" test and assign it the correct status. In the
                          // case of no tests existing for the package, the status will be "skipped".
 
                          if (testResults.empty()) {
                               double duration = 0.0d;
                               final String durationStr = matcher.group(3);
-                              TestStatus testStatus;
+                              final TestStatus testStatus;
 
                               switch (matcher.group(1)) {
                                    case "FAIL": {
@@ -111,7 +107,7 @@ public final class GoTestParser {
 
                                         break;
                                    }
-                                   
+
                                    default: {
                                         testStatus = TestStatus.SKIPPED;
                                    }

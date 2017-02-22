@@ -1,0 +1,678 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">sort/search.go (100.0%)</option>
+				
+				<option value="file1">sort/sort.go (98.3%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" >// Copyright 2010 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// This file implements binary search.
+
+package sort
+
+// Search uses binary search to find and return the smallest index i
+// in [0, n) at which f(i) is true, assuming that on the range [0, n),
+// f(i) == true implies f(i+1) == true.  That is, Search requires that
+// f is false for some (possibly empty) prefix of the input range [0, n)
+// and then true for the (possibly empty) remainder; Search returns
+// the first true index.  If there is no such index, Search returns n.
+// (Note that the "not found" return value is not -1 as in, for instance,
+// strings.Index).
+// Search calls f(i) only for i in the range [0, n).
+//
+// A common use of Search is to find the index i for a value x in
+// a sorted, indexable data structure such as an array or slice.
+// In this case, the argument f, typically a closure, captures the value
+// to be searched for, and how the data structure is indexed and
+// ordered.
+//
+// For instance, given a slice data sorted in ascending order,
+// the call Search(len(data), func(i int) bool { return data[i] &gt;= 23 })
+// returns the smallest index i such that data[i] &gt;= 23.  If the caller
+// wants to find whether 23 is in the slice, it must test data[i] == 23
+// separately.
+//
+// Searching data sorted in descending order would use the &lt;=
+// operator instead of the &gt;= operator.
+//
+// To complete the example above, the following code tries to find the value
+// x in an integer slice data sorted in ascending order:
+//
+//        x := 23
+//        i := sort.Search(len(data), func(i int) bool { return data[i] &gt;= x })
+//        if i &lt; len(data) &amp;&amp; data[i] == x {
+//                // x is present at data[i]
+//        } else {
+//                // x is not present in data,
+//                // but i is the index where it would be inserted.
+//        }
+//
+// As a more whimsical example, this program guesses your number:
+//
+//        func GuessingGame() {
+//                var s string
+//                fmt.Printf("Pick an integer from 0 to 100.\n")
+//                answer := sort.Search(100, func(i int) bool {
+//                        fmt.Printf("Is your number &lt;= %d? ", i)
+//                        fmt.Scanf("%s", &amp;s)
+//                        return s != "" &amp;&amp; s[0] == 'y'
+//                })
+//                fmt.Printf("Your number is %d.\n", answer)
+//        }
+//
+func Search(n int, f func(int) bool) int <span class="cov8" title="1">{
+        // Define f(-1) == false and f(n) == true.
+        // Invariant: f(i-1) == false, f(j) == true.
+        i, j := 0, n
+        for i &lt; j </span><span class="cov8" title="1">{
+                h := i + (j-i)/2 // avoid overflow when computing h
+                // i ≤ h &lt; j
+                if !f(h) </span><span class="cov8" title="1">{
+                        i = h + 1 // preserves f(i-1) == false
+                }</span><span class="cov8" title="1"> else {
+                        j = h // preserves f(j) == true
+                }</span>
+        }
+        // i == j, f(i-1) == false, and f(j) (= f(i)) == true  =&gt;  answer is i.
+        <span class="cov8" title="1">return i</span>
+}
+
+// Convenience wrappers for common cases.
+
+// SearchInts searches for x in a sorted slice of ints and returns the index
+// as specified by Search. The return value is the index to insert x if x is
+// not present (it could be len(a)).
+// The slice must be sorted in ascending order.
+//
+func SearchInts(a []int, x int) int <span class="cov8" title="1">{
+        return Search(len(a), func(i int) bool </span><span class="cov8" title="1">{ return a[i] &gt;= x }</span>)
+}
+
+// SearchFloat64s searches for x in a sorted slice of float64s and returns the index
+// as specified by Search.  The return value is the index to insert x if x is not
+// present (it could be len(a)).
+// The slice must be sorted in ascending order.
+//
+func SearchFloat64s(a []float64, x float64) int <span class="cov8" title="1">{
+        return Search(len(a), func(i int) bool </span><span class="cov8" title="1">{ return a[i] &gt;= x }</span>)
+}
+
+// SearchStrings searches for x in a sorted slice of strings and returns the index
+// as specified by Search.  The return value is the index to insert x if x is not
+// present (it could be len(a)).
+// The slice must be sorted in ascending order.
+//
+func SearchStrings(a []string, x string) int <span class="cov8" title="1">{
+        return Search(len(a), func(i int) bool </span><span class="cov8" title="1">{ return a[i] &gt;= x }</span>)
+}
+
+// Search returns the result of applying SearchInts to the receiver and x.
+func (p IntSlice) Search(x int) int <span class="cov8" title="1">{ return SearchInts(p, x) }</span>
+
+// Search returns the result of applying SearchFloat64s to the receiver and x.
+func (p Float64Slice) Search(x float64) int <span class="cov8" title="1">{ return SearchFloat64s(p, x) }</span>
+
+// Search returns the result of applying SearchStrings to the receiver and x.
+func (p StringSlice) Search(x string) int <span class="cov8" title="1">{ return SearchStrings(p, x) }</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Package sort provides primitives for sorting slices and user-defined
+// collections.
+package sort
+
+// A type, typically a collection, that satisfies sort.Interface can be
+// sorted by the routines in this package.  The methods require that the
+// elements of the collection be enumerated by an integer index.
+type Interface interface {
+        // Len is the number of elements in the collection.
+        Len() int
+        // Less reports whether the element with
+        // index i should sort before the element with index j.
+        Less(i, j int) bool
+        // Swap swaps the elements with indexes i and j.
+        Swap(i, j int)
+}
+
+func min(a, b int) int <span class="cov8" title="1">{
+        if a &lt; b </span><span class="cov8" title="1">{
+                return a
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+
+// Insertion sort
+func insertionSort(data Interface, a, b int) <span class="cov8" title="1">{
+        for i := a + 1; i &lt; b; i++ </span><span class="cov8" title="1">{
+                for j := i; j &gt; a &amp;&amp; data.Less(j, j-1); j-- </span><span class="cov8" title="1">{
+                        data.Swap(j, j-1)
+                }</span>
+        }
+}
+
+// siftDown implements the heap property on data[lo, hi).
+// first is an offset into the array where the root of the heap lies.
+func siftDown(data Interface, lo, hi, first int) <span class="cov8" title="1">{
+        root := lo
+        for </span><span class="cov8" title="1">{
+                child := 2*root + 1
+                if child &gt;= hi </span><span class="cov8" title="1">{
+                        break</span>
+                }
+                <span class="cov8" title="1">if child+1 &lt; hi &amp;&amp; data.Less(first+child, first+child+1) </span><span class="cov8" title="1">{
+                        child++
+                }</span>
+                <span class="cov8" title="1">if !data.Less(first+root, first+child) </span><span class="cov8" title="1">{
+                        return
+                }</span>
+                <span class="cov8" title="1">data.Swap(first+root, first+child)
+                root = child</span>
+        }
+}
+
+func heapSort(data Interface, a, b int) <span class="cov8" title="1">{
+        first := a
+        lo := 0
+        hi := b - a
+
+        // Build heap with greatest element at top.
+        for i := (hi - 1) / 2; i &gt;= 0; i-- </span><span class="cov8" title="1">{
+                siftDown(data, i, hi, first)
+        }</span>
+
+        // Pop elements, largest first, into end of data.
+        <span class="cov8" title="1">for i := hi - 1; i &gt;= 0; i-- </span><span class="cov8" title="1">{
+                data.Swap(first, first+i)
+                siftDown(data, lo, i, first)
+        }</span>
+}
+
+// Quicksort, following Bentley and McIlroy,
+// ``Engineering a Sort Function,'' SP&amp;E November 1993.
+
+// medianOfThree moves the median of the three values data[a], data[b], data[c] into data[a].
+func medianOfThree(data Interface, a, b, c int) <span class="cov8" title="1">{
+        m0 := b
+        m1 := a
+        m2 := c
+        // bubble sort on 3 elements
+        if data.Less(m1, m0) </span><span class="cov8" title="1">{
+                data.Swap(m1, m0)
+        }</span>
+        <span class="cov8" title="1">if data.Less(m2, m1) </span><span class="cov8" title="1">{
+                data.Swap(m2, m1)
+        }</span>
+        <span class="cov8" title="1">if data.Less(m1, m0) </span><span class="cov8" title="1">{
+                data.Swap(m1, m0)
+        }</span>
+        // now data[m0] &lt;= data[m1] &lt;= data[m2]
+}
+
+func swapRange(data Interface, a, b, n int) <span class="cov8" title="1">{
+        for i := 0; i &lt; n; i++ </span><span class="cov8" title="1">{
+                data.Swap(a+i, b+i)
+        }</span>
+}
+
+func doPivot(data Interface, lo, hi int) (midlo, midhi int) <span class="cov8" title="1">{
+        m := lo + (hi-lo)/2 // Written like this to avoid integer overflow.
+        if hi-lo &gt; 40 </span><span class="cov8" title="1">{
+                // Tukey's ``Ninther,'' median of three medians of three.
+                s := (hi - lo) / 8
+                medianOfThree(data, lo, lo+s, lo+2*s)
+                medianOfThree(data, m, m-s, m+s)
+                medianOfThree(data, hi-1, hi-1-s, hi-1-2*s)
+        }</span>
+        <span class="cov8" title="1">medianOfThree(data, lo, m, hi-1)
+
+        // Invariants are:
+        //        data[lo] = pivot (set up by ChoosePivot)
+        //        data[lo &lt;= i &lt; a] = pivot
+        //        data[a &lt;= i &lt; b] &lt; pivot
+        //        data[b &lt;= i &lt; c] is unexamined
+        //        data[c &lt;= i &lt; d] &gt; pivot
+        //        data[d &lt;= i &lt; hi] = pivot
+        //
+        // Once b meets c, can swap the "= pivot" sections
+        // into the middle of the slice.
+        pivot := lo
+        a, b, c, d := lo+1, lo+1, hi, hi
+        for </span><span class="cov8" title="1">{
+                for b &lt; c </span><span class="cov8" title="1">{
+                        if data.Less(b, pivot) </span><span class="cov8" title="1">{ // data[b] &lt; pivot
+                                b++
+                        }</span><span class="cov8" title="1"> else if !data.Less(pivot, b) </span><span class="cov8" title="1">{ // data[b] = pivot
+                                data.Swap(a, b)
+                                a++
+                                b++
+                        }</span><span class="cov8" title="1"> else {
+                                break</span>
+                        }
+                }
+                <span class="cov8" title="1">for b &lt; c </span><span class="cov8" title="1">{
+                        if data.Less(pivot, c-1) </span><span class="cov8" title="1">{ // data[c-1] &gt; pivot
+                                c--
+                        }</span><span class="cov8" title="1"> else if !data.Less(c-1, pivot) </span><span class="cov8" title="1">{ // data[c-1] = pivot
+                                data.Swap(c-1, d-1)
+                                c--
+                                d--
+                        }</span><span class="cov8" title="1"> else {
+                                break</span>
+                        }
+                }
+                <span class="cov8" title="1">if b &gt;= c </span><span class="cov8" title="1">{
+                        break</span>
+                }
+                // data[b] &gt; pivot; data[c-1] &lt; pivot
+                <span class="cov8" title="1">data.Swap(b, c-1)
+                b++
+                c--</span>
+        }
+
+        <span class="cov8" title="1">n := min(b-a, a-lo)
+        swapRange(data, lo, b-n, n)
+
+        n = min(hi-d, d-c)
+        swapRange(data, c, hi-n, n)
+
+        return lo + b - a, hi - (d - c)</span>
+}
+
+func quickSort(data Interface, a, b, maxDepth int) <span class="cov8" title="1">{
+        for b-a &gt; 7 </span><span class="cov8" title="1">{
+                if maxDepth == 0 </span><span class="cov8" title="1">{
+                        heapSort(data, a, b)
+                        return
+                }</span>
+                <span class="cov8" title="1">maxDepth--
+                mlo, mhi := doPivot(data, a, b)
+                // Avoiding recursion on the larger subproblem guarantees
+                // a stack depth of at most lg(b-a).
+                if mlo-a &lt; b-mhi </span><span class="cov8" title="1">{
+                        quickSort(data, a, mlo, maxDepth)
+                        a = mhi // i.e., quickSort(data, mhi, b)
+                }</span><span class="cov8" title="1"> else {
+                        quickSort(data, mhi, b, maxDepth)
+                        b = mlo // i.e., quickSort(data, a, mlo)
+                }</span>
+        }
+        <span class="cov8" title="1">if b-a &gt; 1 </span><span class="cov8" title="1">{
+                insertionSort(data, a, b)
+        }</span>
+}
+
+// Sort sorts data.
+// It makes one call to data.Len to determine n, and O(n*log(n)) calls to
+// data.Less and data.Swap. The sort is not guaranteed to be stable.
+func Sort(data Interface) <span class="cov8" title="1">{
+        // Switch to heapsort if depth of 2*ceil(lg(n+1)) is reached.
+        n := data.Len()
+        maxDepth := 0
+        for i := n; i &gt; 0; i &gt;&gt;= 1 </span><span class="cov8" title="1">{
+                maxDepth++
+        }</span>
+        <span class="cov8" title="1">maxDepth *= 2
+        quickSort(data, 0, n, maxDepth)</span>
+}
+
+type reverse struct {
+        // This embedded Interface permits Reverse to use the methods of
+        // another Interface implementation.
+        Interface
+}
+
+// Less returns the opposite of the embedded implementation's Less method.
+func (r reverse) Less(i, j int) bool <span class="cov8" title="1">{
+        return r.Interface.Less(j, i)
+}</span>
+
+// Reverse returns the reverse order for data.
+func Reverse(data Interface) Interface <span class="cov8" title="1">{
+        return &amp;reverse{data}
+}</span>
+
+// IsSorted reports whether data is sorted.
+func IsSorted(data Interface) bool <span class="cov8" title="1">{
+        n := data.Len()
+        for i := n - 1; i &gt; 0; i-- </span><span class="cov8" title="1">{
+                if data.Less(i, i-1) </span><span class="cov8" title="1">{
+                        return false
+                }</span>
+        }
+        <span class="cov8" title="1">return true</span>
+}
+
+// Convenience types for common cases
+
+// IntSlice attaches the methods of Interface to []int, sorting in increasing order.
+type IntSlice []int
+
+func (p IntSlice) Len() int           <span class="cov8" title="1">{ return len(p) }</span>
+func (p IntSlice) Less(i, j int) bool <span class="cov8" title="1">{ return p[i] &lt; p[j] }</span>
+func (p IntSlice) Swap(i, j int)      <span class="cov8" title="1">{ p[i], p[j] = p[j], p[i] }</span>
+
+// Sort is a convenience method.
+func (p IntSlice) Sort() <span class="cov0" title="0">{ Sort(p) }</span>
+
+// Float64Slice attaches the methods of Interface to []float64, sorting in increasing order.
+type Float64Slice []float64
+
+func (p Float64Slice) Len() int           <span class="cov8" title="1">{ return len(p) }</span>
+func (p Float64Slice) Less(i, j int) bool <span class="cov8" title="1">{ return p[i] &lt; p[j] || isNaN(p[i]) &amp;&amp; !isNaN(p[j]) }</span>
+func (p Float64Slice) Swap(i, j int)      <span class="cov8" title="1">{ p[i], p[j] = p[j], p[i] }</span>
+
+// isNaN is a copy of math.IsNaN to avoid a dependency on the math package.
+func isNaN(f float64) bool <span class="cov8" title="1">{
+        return f != f
+}</span>
+
+// Sort is a convenience method.
+func (p Float64Slice) Sort() <span class="cov0" title="0">{ Sort(p) }</span>
+
+// StringSlice attaches the methods of Interface to []string, sorting in increasing order.
+type StringSlice []string
+
+func (p StringSlice) Len() int           <span class="cov8" title="1">{ return len(p) }</span>
+func (p StringSlice) Less(i, j int) bool <span class="cov8" title="1">{ return p[i] &lt; p[j] }</span>
+func (p StringSlice) Swap(i, j int)      <span class="cov8" title="1">{ p[i], p[j] = p[j], p[i] }</span>
+
+// Sort is a convenience method.
+func (p StringSlice) Sort() <span class="cov0" title="0">{ Sort(p) }</span>
+
+// Convenience wrappers for common cases
+
+// Ints sorts a slice of ints in increasing order.
+func Ints(a []int) <span class="cov8" title="1">{ Sort(IntSlice(a)) }</span>
+
+// Float64s sorts a slice of float64s in increasing order.
+func Float64s(a []float64) <span class="cov8" title="1">{ Sort(Float64Slice(a)) }</span>
+
+// Strings sorts a slice of strings in increasing order.
+func Strings(a []string) <span class="cov8" title="1">{ Sort(StringSlice(a)) }</span>
+
+// IntsAreSorted tests whether a slice of ints is sorted in increasing order.
+func IntsAreSorted(a []int) bool <span class="cov8" title="1">{ return IsSorted(IntSlice(a)) }</span>
+
+// Float64sAreSorted tests whether a slice of float64s is sorted in increasing order.
+func Float64sAreSorted(a []float64) bool <span class="cov8" title="1">{ return IsSorted(Float64Slice(a)) }</span>
+
+// StringsAreSorted tests whether a slice of strings is sorted in increasing order.
+func StringsAreSorted(a []string) bool <span class="cov8" title="1">{ return IsSorted(StringSlice(a)) }</span>
+
+// Notes on stable sorting:
+// The used algorithms are simple and provable correct on all input and use
+// only logarithmic additional stack space.  They perform well if compared
+// experimentally to other stable in-place sorting algorithms.
+//
+// Remarks on other algorithms evaluated:
+//  - GCC's 4.6.3 stable_sort with merge_without_buffer from libstdc++:
+//    Not faster.
+//  - GCC's __rotate for block rotations: Not faster.
+//  - "Practical in-place mergesort" from  Jyrki Katajainen, Tomi A. Pasanen
+//    and Jukka Teuhola; Nordic Journal of Computing 3,1 (1996), 27-40:
+//    The given algorithms are in-place, number of Swap and Assignments
+//    grow as n log n but the algorithm is not stable.
+//  - "Fast Stable In-Plcae Sorting with O(n) Data Moves" J.I. Munro and
+//    V. Raman in Algorithmica (1996) 16, 115-160:
+//    This algorithm either needs additional 2n bits or works only if there
+//    are enough different elements available to encode some permutations
+//    which have to be undone later (so not stable an any input).
+//  - All the optimal in-place sorting/merging algorithms I found are either
+//    unstable or rely on enough different elements in each step to encode the
+//    performed block rearrangements. See also "In-Place Merging Algorithms",
+//    Denham Coates-Evely, Department of Computer Science, Kings College,
+//    January 2004 and the reverences in there.
+//  - Often "optimal" algorithms are optimal in the number of assignments
+//    but Interface has only Swap as operation.
+
+// Stable sorts data while keeping the original order of equal elements.
+//
+// It makes one call to data.Len to determine n, O(n*log(n)) calls to
+// data.Less and O(n*log(n)*log(n)) calls to data.Swap.
+func Stable(data Interface) <span class="cov8" title="1">{
+        n := data.Len()
+        blockSize := 20
+        a, b := 0, blockSize
+        for b &lt;= n </span><span class="cov8" title="1">{
+                insertionSort(data, a, b)
+                a = b
+                b += blockSize
+        }</span>
+        <span class="cov8" title="1">insertionSort(data, a, n)
+
+        for blockSize &lt; n </span><span class="cov8" title="1">{
+                a, b = 0, 2*blockSize
+                for b &lt;= n </span><span class="cov8" title="1">{
+                        symMerge(data, a, a+blockSize, b)
+                        a = b
+                        b += 2 * blockSize
+                }</span>
+                <span class="cov8" title="1">symMerge(data, a, a+blockSize, n)
+                blockSize *= 2</span>
+        }
+}
+
+// SymMerge merges the two sorted subsequences data[a:m] and data[m:b] using
+// the SymMerge algorithm from Pok-Son Kim and Arne Kutzner, "Stable Minimum
+// Storage Merging by Symmetric Comparisons", in Susanne Albers and Tomasz
+// Radzik, editors, Algorithms - ESA 2004, volume 3221 of Lecture Notes in
+// Computer Science, pages 714-723. Springer, 2004.
+//
+// Let M = m-a and N = b-n. Wolog M &lt; N.
+// The recursion depth is bound by ceil(log(N+M)).
+// The algorithm needs O(M*log(N/M + 1)) calls to data.Less.
+// The algorithm needs O((M+N)*log(M)) calls to data.Swap.
+//
+// The paper gives O((M+N)*log(M)) as the number of assignments assuming a
+// rotation algorithm which uses O(M+N+gcd(M+N)) assignments. The argumentation
+// in the paper carries through for Swap operations, especially as the block
+// swapping rotate uses only O(M+N) Swaps.
+func symMerge(data Interface, a, m, b int) <span class="cov8" title="1">{
+        if a &gt;= m || m &gt;= b </span><span class="cov8" title="1">{
+                return
+        }</span>
+
+        <span class="cov8" title="1">mid := a + (b-a)/2
+        n := mid + m
+        start := 0
+        if m &gt; mid </span><span class="cov8" title="1">{
+                start = n - b
+                r, p := mid, n-1
+                for start &lt; r </span><span class="cov8" title="1">{
+                        c := start + (r-start)/2
+                        if !data.Less(p-c, c) </span><span class="cov8" title="1">{
+                                start = c + 1
+                        }</span><span class="cov8" title="1"> else {
+                                r = c
+                        }</span>
+                }
+        }<span class="cov8" title="1"> else {
+                start = a
+                r, p := m, n-1
+                for start &lt; r </span><span class="cov8" title="1">{
+                        c := start + (r-start)/2
+                        if !data.Less(p-c, c) </span><span class="cov8" title="1">{
+                                start = c + 1
+                        }</span><span class="cov8" title="1"> else {
+                                r = c
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">end := n - start
+        rotate(data, start, m, end)
+        symMerge(data, a, start, mid)
+        symMerge(data, mid, end, b)</span>
+}
+
+// Rotate two consecutives blocks u = data[a:m] and v = data[m:b] in data:
+// Data of the form 'x u v y' is changed to 'x v u y'.
+// Rotate performs at most b-a many calls to data.Swap.
+func rotate(data Interface, a, m, b int) <span class="cov8" title="1">{
+        i := m - a
+        if i == 0 </span><span class="cov8" title="1">{
+                return
+        }</span>
+        <span class="cov8" title="1">j := b - m
+        if j == 0 </span><span class="cov8" title="1">{
+                return
+        }</span>
+
+        <span class="cov8" title="1">if i == j </span><span class="cov8" title="1">{
+                swapRange(data, a, m, i)
+                return
+        }</span>
+
+        <span class="cov8" title="1">p := a + i
+        for i != j </span><span class="cov8" title="1">{
+                if i &gt; j </span><span class="cov8" title="1">{
+                        swapRange(data, p-i, p, j)
+                        i -= j
+                }</span><span class="cov8" title="1"> else {
+                        swapRange(data, p-i, p+j-i, i)
+                        j -= i
+                }</span>
+        }
+        <span class="cov8" title="1">swapRange(data, p-i, p, i)</span>
+}
+
+/*
+Complexity of Stable Sorting
+
+
+Complexity of block swapping rotation
+
+Each Swap puts one new element into its correct, final position.
+Elements which reach their final position are no longer moved.
+Thus block swapping rotation needs |u|+|v| calls to Swaps.
+This is best possible as each element might need a move.
+
+Pay attention when comparing to other optimal algorithms which
+typically count the number of assignments instead of swaps:
+E.g. the optimal algorithm of Dudzinski and Dydek for in-place
+rotations uses O(u + v + gcd(u,v)) assignments which is
+better than our O(3 * (u+v)) as gcd(u,v) &lt;= u.
+
+
+Stable sorting by SymMerge and BlockSwap rotations
+
+SymMerg complexity for same size input M = N:
+Calls to Less:  O(M*log(N/M+1)) = O(N*log(2)) = O(N)
+Calls to Swap:  O((M+N)*log(M)) = O(2*N*log(N)) = O(N*log(N))
+
+(The following argument does not fuzz over a missing -1 or
+other stuff which does not impact the final result).
+
+Let n = data.Len(). Assume n = 2^k.
+
+Plain merge sort performs log(n) = k iterations.
+On iteration i the algorithm merges 2^(k-i) blocks, each of size 2^i.
+
+Thus iteration i of merge sort performs:
+Calls to Less  O(2^(k-i) * 2^i) = O(2^k) = O(2^log(n)) = O(n)
+Calls to Swap  O(2^(k-i) * 2^i * log(2^i)) = O(2^k * i) = O(n*i)
+
+In total k = log(n) iterations are performed; so in total:
+Calls to Less O(log(n) * n)
+Calls to Swap O(n + 2*n + 3*n + ... + (k-1)*n + k*n)
+   = O((k/2) * k * n) = O(n * k^2) = O(n * log^2(n))
+
+
+Above results should generalize to arbitrary n = 2^k + p
+and should not be influenced by the initial insertion sort phase:
+Insertion sort is O(n^2) on Swap and Less, thus O(bs^2) per block of
+size bs at n/bs blocks:  O(bs*n) Swaps and Less during insertion sort.
+Merge sort iterations start at i = log(bs). With t = log(bs) constant:
+Calls to Less O((log(n)-t) * n + bs*n) = O(log(n)*n + (bs-t)*n)
+   = O(n * log(n))
+Calls to Swap O(n * log^2(n) - (t^2+t)/2*n) = O(n * log^2(n))
+
+*/
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible = document.getElementById('file0');
+		files.addEventListener('change', onChange, false);
+		function onChange() {
+			visible.style.display = 'none';
+			visible = document.getElementById(files.value);
+			visible.style.display = 'block';
+			window.scrollTo(0, 0);
+		}
+	})();
+	</script>
+</html>

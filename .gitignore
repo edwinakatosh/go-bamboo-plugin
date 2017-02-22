@@ -2,6 +2,7 @@
 .settings/
 bin/
 target/
+test-output/
 
 .DS_Store
 .checkstyle

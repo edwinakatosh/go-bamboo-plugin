@@ -1,0 +1,1648 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">strings/reader.go (94.2%)</option>
+				
+				<option value="file1">strings/replace.go (96.7%)</option>
+				
+				<option value="file2">strings/search.go (100.0%)</option>
+				
+				<option value="file3">strings/strings.go (98.5%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" >// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package strings
+
+import (
+        "errors"
+        "io"
+        "unicode/utf8"
+)
+
+// A Reader implements the io.Reader, io.ReaderAt, io.Seeker, io.WriterTo,
+// io.ByteScanner, and io.RuneScanner interfaces by reading
+// from a string.
+type Reader struct {
+        s        string
+        i        int64 // current reading index
+        prevRune int   // index of previous rune; or &lt; 0
+}
+
+// Len returns the number of bytes of the unread portion of the
+// string.
+func (r *Reader) Len() int <span class="cov8" title="1">{
+        if r.i &gt;= int64(len(r.s)) </span><span class="cov8" title="1">{
+                return 0
+        }</span>
+        <span class="cov0" title="0">return int(int64(len(r.s)) - r.i)</span>
+}
+
+func (r *Reader) Read(b []byte) (n int, err error) <span class="cov8" title="1">{
+        if len(b) == 0 </span><span class="cov8" title="1">{
+                return 0, nil
+        }</span>
+        <span class="cov8" title="1">if r.i &gt;= int64(len(r.s)) </span><span class="cov8" title="1">{
+                return 0, io.EOF
+        }</span>
+        <span class="cov8" title="1">r.prevRune = -1
+        n = copy(b, r.s[r.i:])
+        r.i += int64(n)
+        return</span>
+}
+
+func (r *Reader) ReadAt(b []byte, off int64) (n int, err error) <span class="cov8" title="1">{
+        // cannot modify state - see io.ReaderAt
+        if off &lt; 0 </span><span class="cov8" title="1">{
+                return 0, errors.New("strings.Reader.ReadAt: negative offset")
+        }</span>
+        <span class="cov8" title="1">if off &gt;= int64(len(r.s)) </span><span class="cov8" title="1">{
+                return 0, io.EOF
+        }</span>
+        <span class="cov8" title="1">n = copy(b, r.s[off:])
+        if n &lt; len(b) </span><span class="cov8" title="1">{
+                err = io.EOF
+        }</span>
+        <span class="cov8" title="1">return</span>
+}
+
+func (r *Reader) ReadByte() (b byte, err error) <span class="cov8" title="1">{
+        r.prevRune = -1
+        if r.i &gt;= int64(len(r.s)) </span><span class="cov8" title="1">{
+                return 0, io.EOF
+        }</span>
+        <span class="cov8" title="1">b = r.s[r.i]
+        r.i++
+        return</span>
+}
+
+func (r *Reader) UnreadByte() error <span class="cov8" title="1">{
+        r.prevRune = -1
+        if r.i &lt;= 0 </span><span class="cov8" title="1">{
+                return errors.New("strings.Reader.UnreadByte: at beginning of string")
+        }</span>
+        <span class="cov8" title="1">r.i--
+        return nil</span>
+}
+
+func (r *Reader) ReadRune() (ch rune, size int, err error) <span class="cov8" title="1">{
+        if r.i &gt;= int64(len(r.s)) </span><span class="cov8" title="1">{
+                r.prevRune = -1
+                return 0, 0, io.EOF
+        }</span>
+        <span class="cov8" title="1">r.prevRune = int(r.i)
+        if c := r.s[r.i]; c &lt; utf8.RuneSelf </span><span class="cov8" title="1">{
+                r.i++
+                return rune(c), 1, nil
+        }</span>
+        <span class="cov8" title="1">ch, size = utf8.DecodeRuneInString(r.s[r.i:])
+        r.i += int64(size)
+        return</span>
+}
+
+func (r *Reader) UnreadRune() error <span class="cov8" title="1">{
+        if r.prevRune &lt; 0 </span><span class="cov8" title="1">{
+                return errors.New("strings.Reader.UnreadRune: previous operation was not ReadRune")
+        }</span>
+        <span class="cov8" title="1">r.i = int64(r.prevRune)
+        r.prevRune = -1
+        return nil</span>
+}
+
+// Seek implements the io.Seeker interface.
+func (r *Reader) Seek(offset int64, whence int) (int64, error) <span class="cov8" title="1">{
+        r.prevRune = -1
+        var abs int64
+        switch whence </span>{
+        <span class="cov8" title="1">case 0:
+                abs = offset</span>
+        <span class="cov8" title="1">case 1:
+                abs = int64(r.i) + offset</span>
+        <span class="cov8" title="1">case 2:
+                abs = int64(len(r.s)) + offset</span>
+        <span class="cov0" title="0">default:
+                return 0, errors.New("strings.Reader.Seek: invalid whence")</span>
+        }
+        <span class="cov8" title="1">if abs &lt; 0 </span><span class="cov8" title="1">{
+                return 0, errors.New("strings.Reader.Seek: negative position")
+        }</span>
+        <span class="cov8" title="1">r.i = abs
+        return abs, nil</span>
+}
+
+// WriteTo implements the io.WriterTo interface.
+func (r *Reader) WriteTo(w io.Writer) (n int64, err error) <span class="cov8" title="1">{
+        r.prevRune = -1
+        if r.i &gt;= int64(len(r.s)) </span><span class="cov8" title="1">{
+                return 0, nil
+        }</span>
+        <span class="cov8" title="1">s := r.s[r.i:]
+        m, err := io.WriteString(w, s)
+        if m &gt; len(s) </span><span class="cov0" title="0">{
+                panic("strings.Reader.WriteTo: invalid WriteString count")
+        }</span>
+        <span class="cov8" title="1">r.i += int64(m)
+        n = int64(m)
+        if m != len(s) &amp;&amp; err == nil </span><span class="cov0" title="0">{
+                err = io.ErrShortWrite
+        }</span>
+        <span class="cov8" title="1">return</span>
+}
+
+// NewReader returns a new Reader reading from s.
+// It is similar to bytes.NewBufferString but more efficient and read-only.
+func NewReader(s string) *Reader <span class="cov8" title="1">{ return &amp;Reader{s, 0, -1} }</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// Copyright 2011 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package strings
+
+import "io"
+
+// Replacer replaces a list of strings with replacements.
+// It is safe for concurrent use by multiple goroutines.
+type Replacer struct {
+        r replacer
+}
+
+// replacer is the interface that a replacement algorithm needs to implement.
+type replacer interface {
+        Replace(s string) string
+        WriteString(w io.Writer, s string) (n int, err error)
+}
+
+// NewReplacer returns a new Replacer from a list of old, new string pairs.
+// Replacements are performed in order, without overlapping matches.
+func NewReplacer(oldnew ...string) *Replacer <span class="cov8" title="1">{
+        if len(oldnew)%2 == 1 </span><span class="cov0" title="0">{
+                panic("strings.NewReplacer: odd argument count")
+        }</span>
+
+        <span class="cov8" title="1">if len(oldnew) == 2 &amp;&amp; len(oldnew[0]) &gt; 1 </span><span class="cov8" title="1">{
+                return &amp;Replacer{r: makeSingleStringReplacer(oldnew[0], oldnew[1])}
+        }</span>
+
+        <span class="cov8" title="1">allNewBytes := true
+        for i := 0; i &lt; len(oldnew); i += 2 </span><span class="cov8" title="1">{
+                if len(oldnew[i]) != 1 </span><span class="cov8" title="1">{
+                        return &amp;Replacer{r: makeGenericReplacer(oldnew)}
+                }</span>
+                <span class="cov8" title="1">if len(oldnew[i+1]) != 1 </span><span class="cov8" title="1">{
+                        allNewBytes = false
+                }</span>
+        }
+
+        <span class="cov8" title="1">if allNewBytes </span><span class="cov8" title="1">{
+                r := byteReplacer{}
+                for i := range r </span><span class="cov8" title="1">{
+                        r[i] = byte(i)
+                }</span>
+                // The first occurrence of old-&gt;new map takes precedence
+                // over the others with the same old string.
+                <span class="cov8" title="1">for i := len(oldnew) - 2; i &gt;= 0; i -= 2 </span><span class="cov8" title="1">{
+                        o := oldnew[i][0]
+                        n := oldnew[i+1][0]
+                        r[o] = n
+                }</span>
+                <span class="cov8" title="1">return &amp;Replacer{r: &amp;r}</span>
+        }
+
+        <span class="cov8" title="1">r := byteStringReplacer{}
+        // The first occurrence of old-&gt;new map takes precedence
+        // over the others with the same old string.
+        for i := len(oldnew) - 2; i &gt;= 0; i -= 2 </span><span class="cov8" title="1">{
+                o := oldnew[i][0]
+                n := oldnew[i+1]
+                r[o] = []byte(n)
+        }</span>
+        <span class="cov8" title="1">return &amp;Replacer{r: &amp;r}</span>
+}
+
+// Replace returns a copy of s with all replacements performed.
+func (r *Replacer) Replace(s string) string <span class="cov8" title="1">{
+        return r.r.Replace(s)
+}</span>
+
+// WriteString writes s to w with all replacements performed.
+func (r *Replacer) WriteString(w io.Writer, s string) (n int, err error) <span class="cov8" title="1">{
+        return r.r.WriteString(w, s)
+}</span>
+
+// trieNode is a node in a lookup trie for prioritized key/value pairs. Keys
+// and values may be empty. For example, the trie containing keys "ax", "ay",
+// "bcbc", "x" and "xy" could have eight nodes:
+//
+//  n0  -
+//  n1  a-
+//  n2  .x+
+//  n3  .y+
+//  n4  b-
+//  n5  .cbc+
+//  n6  x+
+//  n7  .y+
+//
+// n0 is the root node, and its children are n1, n4 and n6; n1's children are
+// n2 and n3; n4's child is n5; n6's child is n7. Nodes n0, n1 and n4 (marked
+// with a trailing "-") are partial keys, and nodes n2, n3, n5, n6 and n7
+// (marked with a trailing "+") are complete keys.
+type trieNode struct {
+        // value is the value of the trie node's key/value pair. It is empty if
+        // this node is not a complete key.
+        value string
+        // priority is the priority (higher is more important) of the trie node's
+        // key/value pair; keys are not necessarily matched shortest- or longest-
+        // first. Priority is positive if this node is a complete key, and zero
+        // otherwise. In the example above, positive/zero priorities are marked
+        // with a trailing "+" or "-".
+        priority int
+
+        // A trie node may have zero, one or more child nodes:
+        //  * if the remaining fields are zero, there are no children.
+        //  * if prefix and next are non-zero, there is one child in next.
+        //  * if table is non-zero, it defines all the children.
+        //
+        // Prefixes are preferred over tables when there is one child, but the
+        // root node always uses a table for lookup efficiency.
+
+        // prefix is the difference in keys between this trie node and the next.
+        // In the example above, node n4 has prefix "cbc" and n4's next node is n5.
+        // Node n5 has no children and so has zero prefix, next and table fields.
+        prefix string
+        next   *trieNode
+
+        // table is a lookup table indexed by the next byte in the key, after
+        // remapping that byte through genericReplacer.mapping to create a dense
+        // index. In the example above, the keys only use 'a', 'b', 'c', 'x' and
+        // 'y', which remap to 0, 1, 2, 3 and 4. All other bytes remap to 5, and
+        // genericReplacer.tableSize will be 5. Node n0's table will be
+        // []*trieNode{ 0:n1, 1:n4, 3:n6 }, where the 0, 1 and 3 are the remapped
+        // 'a', 'b' and 'x'.
+        table []*trieNode
+}
+
+func (t *trieNode) add(key, val string, priority int, r *genericReplacer) <span class="cov8" title="1">{
+        if key == "" </span><span class="cov8" title="1">{
+                if t.priority == 0 </span><span class="cov8" title="1">{
+                        t.value = val
+                        t.priority = priority
+                }</span>
+                <span class="cov8" title="1">return</span>
+        }
+
+        <span class="cov8" title="1">if t.prefix != "" </span><span class="cov8" title="1">{
+                // Need to split the prefix among multiple nodes.
+                var n int // length of the longest common prefix
+                for ; n &lt; len(t.prefix) &amp;&amp; n &lt; len(key); n++ </span><span class="cov8" title="1">{
+                        if t.prefix[n] != key[n] </span><span class="cov8" title="1">{
+                                break</span>
+                        }
+                }
+                <span class="cov8" title="1">if n == len(t.prefix) </span><span class="cov8" title="1">{
+                        t.next.add(key[n:], val, priority, r)
+                }</span><span class="cov8" title="1"> else if n == 0 </span><span class="cov8" title="1">{
+                        // First byte differs, start a new lookup table here. Looking up
+                        // what is currently t.prefix[0] will lead to prefixNode, and
+                        // looking up key[0] will lead to keyNode.
+                        var prefixNode *trieNode
+                        if len(t.prefix) == 1 </span><span class="cov8" title="1">{
+                                prefixNode = t.next
+                        }</span><span class="cov8" title="1"> else {
+                                prefixNode = &amp;trieNode{
+                                        prefix: t.prefix[1:],
+                                        next:   t.next,
+                                }
+                        }</span>
+                        <span class="cov8" title="1">keyNode := new(trieNode)
+                        t.table = make([]*trieNode, r.tableSize)
+                        t.table[r.mapping[t.prefix[0]]] = prefixNode
+                        t.table[r.mapping[key[0]]] = keyNode
+                        t.prefix = ""
+                        t.next = nil
+                        keyNode.add(key[1:], val, priority, r)</span>
+                }<span class="cov8" title="1"> else {
+                        // Insert new node after the common section of the prefix.
+                        next := &amp;trieNode{
+                                prefix: t.prefix[n:],
+                                next:   t.next,
+                        }
+                        t.prefix = t.prefix[:n]
+                        t.next = next
+                        next.add(key[n:], val, priority, r)
+                }</span>
+        }<span class="cov8" title="1"> else if t.table != nil </span><span class="cov8" title="1">{
+                // Insert into existing table.
+                m := r.mapping[key[0]]
+                if t.table[m] == nil </span><span class="cov8" title="1">{
+                        t.table[m] = new(trieNode)
+                }</span>
+                <span class="cov8" title="1">t.table[m].add(key[1:], val, priority, r)</span>
+        }<span class="cov8" title="1"> else {
+                t.prefix = key
+                t.next = new(trieNode)
+                t.next.add("", val, priority, r)
+        }</span>
+}
+
+func (r *genericReplacer) lookup(s string, ignoreRoot bool) (val string, keylen int, found bool) <span class="cov8" title="1">{
+        // Iterate down the trie to the end, and grab the value and keylen with
+        // the highest priority.
+        bestPriority := 0
+        node := &amp;r.root
+        n := 0
+        for node != nil </span><span class="cov8" title="1">{
+                if node.priority &gt; bestPriority &amp;&amp; !(ignoreRoot &amp;&amp; node == &amp;r.root) </span><span class="cov8" title="1">{
+                        bestPriority = node.priority
+                        val = node.value
+                        keylen = n
+                        found = true
+                }</span>
+
+                <span class="cov8" title="1">if s == "" </span><span class="cov8" title="1">{
+                        break</span>
+                }
+                <span class="cov8" title="1">if node.table != nil </span><span class="cov8" title="1">{
+                        index := r.mapping[s[0]]
+                        if int(index) == r.tableSize </span><span class="cov8" title="1">{
+                                break</span>
+                        }
+                        <span class="cov8" title="1">node = node.table[index]
+                        s = s[1:]
+                        n++</span>
+                }<span class="cov8" title="1"> else if node.prefix != "" &amp;&amp; HasPrefix(s, node.prefix) </span><span class="cov8" title="1">{
+                        n += len(node.prefix)
+                        s = s[len(node.prefix):]
+                        node = node.next
+                }</span><span class="cov8" title="1"> else {
+                        break</span>
+                }
+        }
+        <span class="cov8" title="1">return</span>
+}
+
+// genericReplacer is the fully generic algorithm.
+// It's used as a fallback when nothing faster can be used.
+type genericReplacer struct {
+        root trieNode
+        // tableSize is the size of a trie node's lookup table. It is the number
+        // of unique key bytes.
+        tableSize int
+        // mapping maps from key bytes to a dense index for trieNode.table.
+        mapping [256]byte
+}
+
+func makeGenericReplacer(oldnew []string) *genericReplacer <span class="cov8" title="1">{
+        r := new(genericReplacer)
+        // Find each byte used, then assign them each an index.
+        for i := 0; i &lt; len(oldnew); i += 2 </span><span class="cov8" title="1">{
+                key := oldnew[i]
+                for j := 0; j &lt; len(key); j++ </span><span class="cov8" title="1">{
+                        r.mapping[key[j]] = 1
+                }</span>
+        }
+
+        <span class="cov8" title="1">for _, b := range r.mapping </span><span class="cov8" title="1">{
+                r.tableSize += int(b)
+        }</span>
+
+        <span class="cov8" title="1">var index byte
+        for i, b := range r.mapping </span><span class="cov8" title="1">{
+                if b == 0 </span><span class="cov8" title="1">{
+                        r.mapping[i] = byte(r.tableSize)
+                }</span><span class="cov8" title="1"> else {
+                        r.mapping[i] = index
+                        index++
+                }</span>
+        }
+        // Ensure root node uses a lookup table (for performance).
+        <span class="cov8" title="1">r.root.table = make([]*trieNode, r.tableSize)
+
+        for i := 0; i &lt; len(oldnew); i += 2 </span><span class="cov8" title="1">{
+                r.root.add(oldnew[i], oldnew[i+1], len(oldnew)-i, r)
+        }</span>
+        <span class="cov8" title="1">return r</span>
+}
+
+type appendSliceWriter []byte
+
+// Write writes to the buffer to satisfy io.Writer.
+func (w *appendSliceWriter) Write(p []byte) (int, error) <span class="cov0" title="0">{
+        *w = append(*w, p...)
+        return len(p), nil
+}</span>
+
+// WriteString writes to the buffer without string-&gt;[]byte-&gt;string allocations.
+func (w *appendSliceWriter) WriteString(s string) (int, error) <span class="cov8" title="1">{
+        *w = append(*w, s...)
+        return len(s), nil
+}</span>
+
+type stringWriterIface interface {
+        WriteString(string) (int, error)
+}
+
+type stringWriter struct {
+        w io.Writer
+}
+
+func (w stringWriter) WriteString(s string) (int, error) <span class="cov8" title="1">{
+        return w.w.Write([]byte(s))
+}</span>
+
+func getStringWriter(w io.Writer) stringWriterIface <span class="cov8" title="1">{
+        sw, ok := w.(stringWriterIface)
+        if !ok </span><span class="cov8" title="1">{
+                sw = stringWriter{w}
+        }</span>
+        <span class="cov8" title="1">return sw</span>
+}
+
+func (r *genericReplacer) Replace(s string) string <span class="cov8" title="1">{
+        buf := make(appendSliceWriter, 0, len(s))
+        r.WriteString(&amp;buf, s)
+        return string(buf)
+}</span>
+
+func (r *genericReplacer) WriteString(w io.Writer, s string) (n int, err error) <span class="cov8" title="1">{
+        sw := getStringWriter(w)
+        var last, wn int
+        var prevMatchEmpty bool
+        for i := 0; i &lt;= len(s); </span><span class="cov8" title="1">{
+                // Fast path: s[i] is not a prefix of any pattern.
+                if i != len(s) &amp;&amp; r.root.priority == 0 </span><span class="cov8" title="1">{
+                        index := int(r.mapping[s[i]])
+                        if index == r.tableSize || r.root.table[index] == nil </span><span class="cov8" title="1">{
+                                i++
+                                continue</span>
+                        }
+                }
+
+                // Ignore the empty match iff the previous loop found the empty match.
+                <span class="cov8" title="1">val, keylen, match := r.lookup(s[i:], prevMatchEmpty)
+                prevMatchEmpty = match &amp;&amp; keylen == 0
+                if match </span><span class="cov8" title="1">{
+                        wn, err = sw.WriteString(s[last:i])
+                        n += wn
+                        if err != nil </span><span class="cov8" title="1">{
+                                return
+                        }</span>
+                        <span class="cov8" title="1">wn, err = sw.WriteString(val)
+                        n += wn
+                        if err != nil </span><span class="cov0" title="0">{
+                                return
+                        }</span>
+                        <span class="cov8" title="1">i += keylen
+                        last = i
+                        continue</span>
+                }
+                <span class="cov8" title="1">i++</span>
+        }
+        <span class="cov8" title="1">if last != len(s) </span><span class="cov8" title="1">{
+                wn, err = sw.WriteString(s[last:])
+                n += wn
+        }</span>
+        <span class="cov8" title="1">return</span>
+}
+
+// singleStringReplacer is the implementation that's used when there is only
+// one string to replace (and that string has more than one byte).
+type singleStringReplacer struct {
+        finder *stringFinder
+        // value is the new string that replaces that pattern when it's found.
+        value string
+}
+
+func makeSingleStringReplacer(pattern string, value string) *singleStringReplacer <span class="cov8" title="1">{
+        return &amp;singleStringReplacer{finder: makeStringFinder(pattern), value: value}
+}</span>
+
+func (r *singleStringReplacer) Replace(s string) string <span class="cov8" title="1">{
+        var buf []byte
+        i, matched := 0, false
+        for </span><span class="cov8" title="1">{
+                match := r.finder.next(s[i:])
+                if match == -1 </span><span class="cov8" title="1">{
+                        break</span>
+                }
+                <span class="cov8" title="1">matched = true
+                buf = append(buf, s[i:i+match]...)
+                buf = append(buf, r.value...)
+                i += match + len(r.finder.pattern)</span>
+        }
+        <span class="cov8" title="1">if !matched </span><span class="cov8" title="1">{
+                return s
+        }</span>
+        <span class="cov8" title="1">buf = append(buf, s[i:]...)
+        return string(buf)</span>
+}
+
+func (r *singleStringReplacer) WriteString(w io.Writer, s string) (n int, err error) <span class="cov8" title="1">{
+        sw := getStringWriter(w)
+        var i, wn int
+        for </span><span class="cov8" title="1">{
+                match := r.finder.next(s[i:])
+                if match == -1 </span><span class="cov8" title="1">{
+                        break</span>
+                }
+                <span class="cov8" title="1">wn, err = sw.WriteString(s[i : i+match])
+                n += wn
+                if err != nil </span><span class="cov0" title="0">{
+                        return
+                }</span>
+                <span class="cov8" title="1">wn, err = sw.WriteString(r.value)
+                n += wn
+                if err != nil </span><span class="cov0" title="0">{
+                        return
+                }</span>
+                <span class="cov8" title="1">i += match + len(r.finder.pattern)</span>
+        }
+        <span class="cov8" title="1">wn, err = sw.WriteString(s[i:])
+        n += wn
+        return</span>
+}
+
+// byteReplacer is the implementation that's used when all the "old"
+// and "new" values are single ASCII bytes.
+// The array contains replacement bytes indexed by old byte.
+type byteReplacer [256]byte
+
+func (r *byteReplacer) Replace(s string) string <span class="cov8" title="1">{
+        var buf []byte // lazily allocated
+        for i := 0; i &lt; len(s); i++ </span><span class="cov8" title="1">{
+                b := s[i]
+                if r[b] != b </span><span class="cov8" title="1">{
+                        if buf == nil </span><span class="cov8" title="1">{
+                                buf = []byte(s)
+                        }</span>
+                        <span class="cov8" title="1">buf[i] = r[b]</span>
+                }
+        }
+        <span class="cov8" title="1">if buf == nil </span><span class="cov8" title="1">{
+                return s
+        }</span>
+        <span class="cov8" title="1">return string(buf)</span>
+}
+
+func (r *byteReplacer) WriteString(w io.Writer, s string) (n int, err error) <span class="cov8" title="1">{
+        // TODO(bradfitz): use io.WriteString with slices of s, avoiding allocation.
+        bufsize := 32 &lt;&lt; 10
+        if len(s) &lt; bufsize </span><span class="cov8" title="1">{
+                bufsize = len(s)
+        }</span>
+        <span class="cov8" title="1">buf := make([]byte, bufsize)
+
+        for len(s) &gt; 0 </span><span class="cov8" title="1">{
+                ncopy := copy(buf, s[:])
+                s = s[ncopy:]
+                for i, b := range buf[:ncopy] </span><span class="cov8" title="1">{
+                        buf[i] = r[b]
+                }</span>
+                <span class="cov8" title="1">wn, err := w.Write(buf[:ncopy])
+                n += wn
+                if err != nil </span><span class="cov8" title="1">{
+                        return n, err
+                }</span>
+        }
+        <span class="cov8" title="1">return n, nil</span>
+}
+
+// byteStringReplacer is the implementation that's used when all the
+// "old" values are single ASCII bytes but the "new" values vary in size.
+// The array contains replacement byte slices indexed by old byte.
+// A nil []byte means that the old byte should not be replaced.
+type byteStringReplacer [256][]byte
+
+func (r *byteStringReplacer) Replace(s string) string <span class="cov8" title="1">{
+        newSize := len(s)
+        anyChanges := false
+        for i := 0; i &lt; len(s); i++ </span><span class="cov8" title="1">{
+                b := s[i]
+                if r[b] != nil </span><span class="cov8" title="1">{
+                        anyChanges = true
+                        // The -1 is because we are replacing 1 byte with len(r[b]) bytes.
+                        newSize += len(r[b]) - 1
+                }</span>
+        }
+        <span class="cov8" title="1">if !anyChanges </span><span class="cov8" title="1">{
+                return s
+        }</span>
+        <span class="cov8" title="1">buf := make([]byte, newSize)
+        bi := buf
+        for i := 0; i &lt; len(s); i++ </span><span class="cov8" title="1">{
+                b := s[i]
+                if r[b] != nil </span><span class="cov8" title="1">{
+                        n := copy(bi, r[b])
+                        bi = bi[n:]
+                }</span><span class="cov8" title="1"> else {
+                        bi[0] = b
+                        bi = bi[1:]
+                }</span>
+        }
+        <span class="cov8" title="1">return string(buf)</span>
+}
+
+func (r *byteStringReplacer) WriteString(w io.Writer, s string) (n int, err error) <span class="cov8" title="1">{
+        sw := getStringWriter(w)
+        last := 0
+        for i := 0; i &lt; len(s); i++ </span><span class="cov8" title="1">{
+                b := s[i]
+                if r[b] == nil </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">if last != i </span><span class="cov8" title="1">{
+                        nw, err := sw.WriteString(s[last:i])
+                        n += nw
+                        if err != nil </span><span class="cov0" title="0">{
+                                return n, err
+                        }</span>
+                }
+                <span class="cov8" title="1">last = i + 1
+                nw, err := w.Write(r[b])
+                n += nw
+                if err != nil </span><span class="cov0" title="0">{
+                        return n, err
+                }</span>
+        }
+        <span class="cov8" title="1">if last != len(s) </span><span class="cov8" title="1">{
+                var nw int
+                nw, err = sw.WriteString(s[last:])
+                n += nw
+        }</span>
+        <span class="cov8" title="1">return</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">// Copyright 2012 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package strings
+
+// stringFinder efficiently finds strings in a source text. It's implemented
+// using the Boyer-Moore string search algorithm:
+// http://en.wikipedia.org/wiki/Boyer-Moore_string_search_algorithm
+// http://www.cs.utexas.edu/~moore/publications/fstrpos.pdf (note: this aged
+// document uses 1-based indexing)
+type stringFinder struct {
+        // pattern is the string that we are searching for in the text.
+        pattern string
+
+        // badCharSkip[b] contains the distance between the last byte of pattern
+        // and the rightmost occurrence of b in pattern. If b is not in pattern,
+        // badCharSkip[b] is len(pattern).
+        //
+        // Whenever a mismatch is found with byte b in the text, we can safely
+        // shift the matching frame at least badCharSkip[b] until the next time
+        // the matching char could be in alignment.
+        badCharSkip [256]int
+
+        // goodSuffixSkip[i] defines how far we can shift the matching frame given
+        // that the suffix pattern[i+1:] matches, but the byte pattern[i] does
+        // not. There are two cases to consider:
+        //
+        // 1. The matched suffix occurs elsewhere in pattern (with a different
+        // byte preceding it that we might possibly match). In this case, we can
+        // shift the matching frame to align with the next suffix chunk. For
+        // example, the pattern "mississi" has the suffix "issi" next occurring
+        // (in right-to-left order) at index 1, so goodSuffixSkip[3] ==
+        // shift+len(suffix) == 3+4 == 7.
+        //
+        // 2. If the matched suffix does not occur elsewhere in pattern, then the
+        // matching frame may share part of its prefix with the end of the
+        // matching suffix. In this case, goodSuffixSkip[i] will contain how far
+        // to shift the frame to align this portion of the prefix to the
+        // suffix. For example, in the pattern "abcxxxabc", when the first
+        // mismatch from the back is found to be in position 3, the matching
+        // suffix "xxabc" is not found elsewhere in the pattern. However, its
+        // rightmost "abc" (at position 6) is a prefix of the whole pattern, so
+        // goodSuffixSkip[3] == shift+len(suffix) == 6+5 == 11.
+        goodSuffixSkip []int
+}
+
+func makeStringFinder(pattern string) *stringFinder <span class="cov8" title="1">{
+        f := &amp;stringFinder{
+                pattern:        pattern,
+                goodSuffixSkip: make([]int, len(pattern)),
+        }
+        // last is the index of the last character in the pattern.
+        last := len(pattern) - 1
+
+        // Build bad character table.
+        // Bytes not in the pattern can skip one pattern's length.
+        for i := range f.badCharSkip </span><span class="cov8" title="1">{
+                f.badCharSkip[i] = len(pattern)
+        }</span>
+        // The loop condition is &lt; instead of &lt;= so that the last byte does not
+        // have a zero distance to itself. Finding this byte out of place implies
+        // that it is not in the last position.
+        <span class="cov8" title="1">for i := 0; i &lt; last; i++ </span><span class="cov8" title="1">{
+                f.badCharSkip[pattern[i]] = last - i
+        }</span>
+
+        // Build good suffix table.
+        // First pass: set each value to the next index which starts a prefix of
+        // pattern.
+        <span class="cov8" title="1">lastPrefix := last
+        for i := last; i &gt;= 0; i-- </span><span class="cov8" title="1">{
+                if HasPrefix(pattern, pattern[i+1:]) </span><span class="cov8" title="1">{
+                        lastPrefix = i + 1
+                }</span>
+                // lastPrefix is the shift, and (last-i) is len(suffix).
+                <span class="cov8" title="1">f.goodSuffixSkip[i] = lastPrefix + last - i</span>
+        }
+        // Second pass: find repeats of pattern's suffix starting from the front.
+        <span class="cov8" title="1">for i := 0; i &lt; last; i++ </span><span class="cov8" title="1">{
+                lenSuffix := longestCommonSuffix(pattern, pattern[1:i+1])
+                if pattern[i-lenSuffix] != pattern[last-lenSuffix] </span><span class="cov8" title="1">{
+                        // (last-i) is the shift, and lenSuffix is len(suffix).
+                        f.goodSuffixSkip[last-lenSuffix] = lenSuffix + last - i
+                }</span>
+        }
+
+        <span class="cov8" title="1">return f</span>
+}
+
+func longestCommonSuffix(a, b string) (i int) <span class="cov8" title="1">{
+        for ; i &lt; len(a) &amp;&amp; i &lt; len(b); i++ </span><span class="cov8" title="1">{
+                if a[len(a)-1-i] != b[len(b)-1-i] </span><span class="cov8" title="1">{
+                        break</span>
+                }
+        }
+        <span class="cov8" title="1">return</span>
+}
+
+// next returns the index in text of the first occurrence of the pattern. If
+// the pattern is not found, it returns -1.
+func (f *stringFinder) next(text string) int <span class="cov8" title="1">{
+        i := len(f.pattern) - 1
+        for i &lt; len(text) </span><span class="cov8" title="1">{
+                // Compare backwards from the end until the first unmatching character.
+                j := len(f.pattern) - 1
+                for j &gt;= 0 &amp;&amp; text[i] == f.pattern[j] </span><span class="cov8" title="1">{
+                        i--
+                        j--
+                }</span>
+                <span class="cov8" title="1">if j &lt; 0 </span><span class="cov8" title="1">{
+                        return i + 1 // match
+                }</span>
+                <span class="cov8" title="1">i += max(f.badCharSkip[text[i]], f.goodSuffixSkip[j])</span>
+        }
+        <span class="cov8" title="1">return -1</span>
+}
+
+func max(a, b int) int <span class="cov8" title="1">{
+        if a &gt; b </span><span class="cov8" title="1">{
+                return a
+        }</span>
+        <span class="cov8" title="1">return b</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Package strings implements simple functions to manipulate strings.
+package strings
+
+import (
+        "unicode"
+        "unicode/utf8"
+)
+
+// explode splits s into an array of UTF-8 sequences, one per Unicode character (still strings) up to a maximum of n (n &lt; 0 means no limit).
+// Invalid UTF-8 sequences become correct encodings of U+FFF8.
+func explode(s string, n int) []string <span class="cov8" title="1">{
+        if n == 0 </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">l := utf8.RuneCountInString(s)
+        if n &lt;= 0 || n &gt; l </span><span class="cov8" title="1">{
+                n = l
+        }</span>
+        <span class="cov8" title="1">a := make([]string, n)
+        var size int
+        var ch rune
+        i, cur := 0, 0
+        for ; i+1 &lt; n; i++ </span><span class="cov8" title="1">{
+                ch, size = utf8.DecodeRuneInString(s[cur:])
+                if ch == utf8.RuneError </span><span class="cov0" title="0">{
+                        a[i] = string(utf8.RuneError)
+                }</span><span class="cov8" title="1"> else {
+                        a[i] = s[cur : cur+size]
+                }</span>
+                <span class="cov8" title="1">cur += size</span>
+        }
+        // add the rest, if there is any
+        <span class="cov8" title="1">if cur &lt; len(s) </span><span class="cov8" title="1">{
+                a[i] = s[cur:]
+        }</span>
+        <span class="cov8" title="1">return a</span>
+}
+
+// primeRK is the prime base used in Rabin-Karp algorithm.
+const primeRK = 16777619
+
+// hashStr returns the hash and the appropriate multiplicative
+// factor for use in Rabin-Karp algorithm.
+func hashStr(sep string) (uint32, uint32) <span class="cov8" title="1">{
+        hash := uint32(0)
+        for i := 0; i &lt; len(sep); i++ </span><span class="cov8" title="1">{
+                hash = hash*primeRK + uint32(sep[i])
+        }</span>
+        <span class="cov8" title="1">var pow, sq uint32 = 1, primeRK
+        for i := len(sep); i &gt; 0; i &gt;&gt;= 1 </span><span class="cov8" title="1">{
+                if i&amp;1 != 0 </span><span class="cov8" title="1">{
+                        pow *= sq
+                }</span>
+                <span class="cov8" title="1">sq *= sq</span>
+        }
+        <span class="cov8" title="1">return hash, pow</span>
+}
+
+// hashStrRev returns the hash of the reverse of sep and the
+// appropriate multiplicative factor for use in Rabin-Karp algorithm.
+func hashStrRev(sep string) (uint32, uint32) <span class="cov8" title="1">{
+        hash := uint32(0)
+        for i := len(sep) - 1; i &gt;= 0; i-- </span><span class="cov8" title="1">{
+                hash = hash*primeRK + uint32(sep[i])
+        }</span>
+        <span class="cov8" title="1">var pow, sq uint32 = 1, primeRK
+        for i := len(sep); i &gt; 0; i &gt;&gt;= 1 </span><span class="cov8" title="1">{
+                if i&amp;1 != 0 </span><span class="cov8" title="1">{
+                        pow *= sq
+                }</span>
+                <span class="cov8" title="1">sq *= sq</span>
+        }
+        <span class="cov8" title="1">return hash, pow</span>
+}
+
+// Count counts the number of non-overlapping instances of sep in s.
+func Count(s, sep string) int <span class="cov8" title="1">{
+        n := 0
+        // special cases
+        switch </span>{
+        <span class="cov8" title="1">case len(sep) == 0:
+                return utf8.RuneCountInString(s) + 1</span>
+        <span class="cov8" title="1">case len(sep) == 1:
+                // special case worth making fast
+                c := sep[0]
+                for i := 0; i &lt; len(s); i++ </span><span class="cov8" title="1">{
+                        if s[i] == c </span><span class="cov8" title="1">{
+                                n++
+                        }</span>
+                }
+                <span class="cov8" title="1">return n</span>
+        <span class="cov8" title="1">case len(sep) &gt; len(s):
+                return 0</span>
+        <span class="cov8" title="1">case len(sep) == len(s):
+                if sep == s </span><span class="cov8" title="1">{
+                        return 1
+                }</span>
+                <span class="cov8" title="1">return 0</span>
+        }
+        // Rabin-Karp search
+        <span class="cov8" title="1">hashsep, pow := hashStr(sep)
+        h := uint32(0)
+        for i := 0; i &lt; len(sep); i++ </span><span class="cov8" title="1">{
+                h = h*primeRK + uint32(s[i])
+        }</span>
+        <span class="cov8" title="1">lastmatch := 0
+        if h == hashsep &amp;&amp; s[:len(sep)] == sep </span><span class="cov8" title="1">{
+                n++
+                lastmatch = len(sep)
+        }</span>
+        <span class="cov8" title="1">for i := len(sep); i &lt; len(s); </span><span class="cov8" title="1">{
+                h *= primeRK
+                h += uint32(s[i])
+                h -= pow * uint32(s[i-len(sep)])
+                i++
+                if h == hashsep &amp;&amp; lastmatch &lt;= i-len(sep) &amp;&amp; s[i-len(sep):i] == sep </span><span class="cov8" title="1">{
+                        n++
+                        lastmatch = i
+                }</span>
+        }
+        <span class="cov8" title="1">return n</span>
+}
+
+// Contains returns true if substr is within s.
+func Contains(s, substr string) bool <span class="cov8" title="1">{
+        return Index(s, substr) &gt;= 0
+}</span>
+
+// ContainsAny returns true if any Unicode code points in chars are within s.
+func ContainsAny(s, chars string) bool <span class="cov8" title="1">{
+        return IndexAny(s, chars) &gt;= 0
+}</span>
+
+// ContainsRune returns true if the Unicode code point r is within s.
+func ContainsRune(s string, r rune) bool <span class="cov8" title="1">{
+        return IndexRune(s, r) &gt;= 0
+}</span>
+
+// Index returns the index of the first instance of sep in s, or -1 if sep is not present in s.
+func Index(s, sep string) int <span class="cov8" title="1">{
+        n := len(sep)
+        switch </span>{
+        <span class="cov8" title="1">case n == 0:
+                return 0</span>
+        <span class="cov8" title="1">case n == 1:
+                return IndexByte(s, sep[0])</span>
+        <span class="cov8" title="1">case n == len(s):
+                if sep == s </span><span class="cov8" title="1">{
+                        return 0
+                }</span>
+                <span class="cov8" title="1">return -1</span>
+        <span class="cov8" title="1">case n &gt; len(s):
+                return -1</span>
+        }
+        // Rabin-Karp search
+        <span class="cov8" title="1">hashsep, pow := hashStr(sep)
+        var h uint32
+        for i := 0; i &lt; n; i++ </span><span class="cov8" title="1">{
+                h = h*primeRK + uint32(s[i])
+        }</span>
+        <span class="cov8" title="1">if h == hashsep &amp;&amp; s[:n] == sep </span><span class="cov8" title="1">{
+                return 0
+        }</span>
+        <span class="cov8" title="1">for i := n; i &lt; len(s); </span><span class="cov8" title="1">{
+                h *= primeRK
+                h += uint32(s[i])
+                h -= pow * uint32(s[i-n])
+                i++
+                if h == hashsep &amp;&amp; s[i-n:i] == sep </span><span class="cov8" title="1">{
+                        return i - n
+                }</span>
+        }
+        <span class="cov8" title="1">return -1</span>
+}
+
+// LastIndex returns the index of the last instance of sep in s, or -1 if sep is not present in s.
+func LastIndex(s, sep string) int <span class="cov8" title="1">{
+        n := len(sep)
+        switch </span>{
+        <span class="cov8" title="1">case n == 0:
+                return len(s)</span>
+        <span class="cov8" title="1">case n == 1:
+                // special case worth making fast
+                c := sep[0]
+                for i := len(s) - 1; i &gt;= 0; i-- </span><span class="cov8" title="1">{
+                        if s[i] == c </span><span class="cov8" title="1">{
+                                return i
+                        }</span>
+                }
+                <span class="cov8" title="1">return -1</span>
+        <span class="cov8" title="1">case n == len(s):
+                if sep == s </span><span class="cov8" title="1">{
+                        return 0
+                }</span>
+                <span class="cov0" title="0">return -1</span>
+        <span class="cov8" title="1">case n &gt; len(s):
+                return -1</span>
+        }
+        // Rabin-Karp search from the end of the string
+        <span class="cov8" title="1">hashsep, pow := hashStrRev(sep)
+        last := len(s) - n
+        var h uint32
+        for i := len(s) - 1; i &gt;= last; i-- </span><span class="cov8" title="1">{
+                h = h*primeRK + uint32(s[i])
+        }</span>
+        <span class="cov8" title="1">if h == hashsep &amp;&amp; s[last:] == sep </span><span class="cov8" title="1">{
+                return last
+        }</span>
+        <span class="cov8" title="1">for i := last - 1; i &gt;= 0; i-- </span><span class="cov8" title="1">{
+                h *= primeRK
+                h += uint32(s[i])
+                h -= pow * uint32(s[i+n])
+                if h == hashsep &amp;&amp; s[i:i+n] == sep </span><span class="cov8" title="1">{
+                        return i
+                }</span>
+        }
+        <span class="cov8" title="1">return -1</span>
+}
+
+// IndexRune returns the index of the first instance of the Unicode code point
+// r, or -1 if rune is not present in s.
+func IndexRune(s string, r rune) int <span class="cov8" title="1">{
+        switch </span>{
+        <span class="cov8" title="1">case r &lt; utf8.RuneSelf:
+                return IndexByte(s, byte(r))</span>
+        <span class="cov8" title="1">default:
+                for i, c := range s </span><span class="cov8" title="1">{
+                        if c == r </span><span class="cov8" title="1">{
+                                return i
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return -1</span>
+}
+
+// IndexAny returns the index of the first instance of any Unicode code point
+// from chars in s, or -1 if no Unicode code point from chars is present in s.
+func IndexAny(s, chars string) int <span class="cov8" title="1">{
+        if len(chars) &gt; 0 </span><span class="cov8" title="1">{
+                for i, c := range s </span><span class="cov8" title="1">{
+                        for _, m := range chars </span><span class="cov8" title="1">{
+                                if c == m </span><span class="cov8" title="1">{
+                                        return i
+                                }</span>
+                        }
+                }
+        }
+        <span class="cov8" title="1">return -1</span>
+}
+
+// LastIndexAny returns the index of the last instance of any Unicode code
+// point from chars in s, or -1 if no Unicode code point from chars is
+// present in s.
+func LastIndexAny(s, chars string) int <span class="cov8" title="1">{
+        if len(chars) &gt; 0 </span><span class="cov8" title="1">{
+                for i := len(s); i &gt; 0; </span><span class="cov8" title="1">{
+                        rune, size := utf8.DecodeLastRuneInString(s[0:i])
+                        i -= size
+                        for _, m := range chars </span><span class="cov8" title="1">{
+                                if rune == m </span><span class="cov8" title="1">{
+                                        return i
+                                }</span>
+                        }
+                }
+        }
+        <span class="cov8" title="1">return -1</span>
+}
+
+// Generic split: splits after each instance of sep,
+// including sepSave bytes of sep in the subarrays.
+func genSplit(s, sep string, sepSave, n int) []string <span class="cov8" title="1">{
+        if n == 0 </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">if sep == "" </span><span class="cov8" title="1">{
+                return explode(s, n)
+        }</span>
+        <span class="cov8" title="1">if n &lt; 0 </span><span class="cov8" title="1">{
+                n = Count(s, sep) + 1
+        }</span>
+        <span class="cov8" title="1">c := sep[0]
+        start := 0
+        a := make([]string, n)
+        na := 0
+        for i := 0; i+len(sep) &lt;= len(s) &amp;&amp; na+1 &lt; n; i++ </span><span class="cov8" title="1">{
+                if s[i] == c &amp;&amp; (len(sep) == 1 || s[i:i+len(sep)] == sep) </span><span class="cov8" title="1">{
+                        a[na] = s[start : i+sepSave]
+                        na++
+                        start = i + len(sep)
+                        i += len(sep) - 1
+                }</span>
+        }
+        <span class="cov8" title="1">a[na] = s[start:]
+        return a[0 : na+1]</span>
+}
+
+// SplitN slices s into substrings separated by sep and returns a slice of
+// the substrings between those separators.
+// If sep is empty, SplitN splits after each UTF-8 sequence.
+// The count determines the number of substrings to return:
+//   n &gt; 0: at most n substrings; the last substring will be the unsplit remainder.
+//   n == 0: the result is nil (zero substrings)
+//   n &lt; 0: all substrings
+func SplitN(s, sep string, n int) []string <span class="cov8" title="1">{ return genSplit(s, sep, 0, n) }</span>
+
+// SplitAfterN slices s into substrings after each instance of sep and
+// returns a slice of those substrings.
+// If sep is empty, SplitAfterN splits after each UTF-8 sequence.
+// The count determines the number of substrings to return:
+//   n &gt; 0: at most n substrings; the last substring will be the unsplit remainder.
+//   n == 0: the result is nil (zero substrings)
+//   n &lt; 0: all substrings
+func SplitAfterN(s, sep string, n int) []string <span class="cov8" title="1">{
+        return genSplit(s, sep, len(sep), n)
+}</span>
+
+// Split slices s into all substrings separated by sep and returns a slice of
+// the substrings between those separators.
+// If sep is empty, Split splits after each UTF-8 sequence.
+// It is equivalent to SplitN with a count of -1.
+func Split(s, sep string) []string <span class="cov8" title="1">{ return genSplit(s, sep, 0, -1) }</span>
+
+// SplitAfter slices s into all substrings after each instance of sep and
+// returns a slice of those substrings.
+// If sep is empty, SplitAfter splits after each UTF-8 sequence.
+// It is equivalent to SplitAfterN with a count of -1.
+func SplitAfter(s, sep string) []string <span class="cov8" title="1">{
+        return genSplit(s, sep, len(sep), -1)
+}</span>
+
+// Fields splits the string s around each instance of one or more consecutive white space
+// characters, as defined by unicode.IsSpace, returning an array of substrings of s or an
+// empty list if s contains only white space.
+func Fields(s string) []string <span class="cov8" title="1">{
+        return FieldsFunc(s, unicode.IsSpace)
+}</span>
+
+// FieldsFunc splits the string s at each run of Unicode code points c satisfying f(c)
+// and returns an array of slices of s. If all code points in s satisfy f(c) or the
+// string is empty, an empty slice is returned.
+// FieldsFunc makes no guarantees about the order in which it calls f(c).
+// If f does not return consistent results for a given c, FieldsFunc may crash.
+func FieldsFunc(s string, f func(rune) bool) []string <span class="cov8" title="1">{
+        // First count the fields.
+        n := 0
+        inField := false
+        for _, rune := range s </span><span class="cov8" title="1">{
+                wasInField := inField
+                inField = !f(rune)
+                if inField &amp;&amp; !wasInField </span><span class="cov8" title="1">{
+                        n++
+                }</span>
+        }
+
+        // Now create them.
+        <span class="cov8" title="1">a := make([]string, n)
+        na := 0
+        fieldStart := -1 // Set to -1 when looking for start of field.
+        for i, rune := range s </span><span class="cov8" title="1">{
+                if f(rune) </span><span class="cov8" title="1">{
+                        if fieldStart &gt;= 0 </span><span class="cov8" title="1">{
+                                a[na] = s[fieldStart:i]
+                                na++
+                                fieldStart = -1
+                        }</span>
+                }<span class="cov8" title="1"> else if fieldStart == -1 </span><span class="cov8" title="1">{
+                        fieldStart = i
+                }</span>
+        }
+        <span class="cov8" title="1">if fieldStart &gt;= 0 </span><span class="cov8" title="1">{ // Last field might end at EOF.
+                a[na] = s[fieldStart:]
+        }</span>
+        <span class="cov8" title="1">return a</span>
+}
+
+// Join concatenates the elements of a to create a single string.   The separator string
+// sep is placed between elements in the resulting string.
+func Join(a []string, sep string) string <span class="cov8" title="1">{
+        if len(a) == 0 </span><span class="cov8" title="1">{
+                return ""
+        }</span>
+        <span class="cov8" title="1">if len(a) == 1 </span><span class="cov8" title="1">{
+                return a[0]
+        }</span>
+        <span class="cov8" title="1">n := len(sep) * (len(a) - 1)
+        for i := 0; i &lt; len(a); i++ </span><span class="cov8" title="1">{
+                n += len(a[i])
+        }</span>
+
+        <span class="cov8" title="1">b := make([]byte, n)
+        bp := copy(b, a[0])
+        for _, s := range a[1:] </span><span class="cov8" title="1">{
+                bp += copy(b[bp:], sep)
+                bp += copy(b[bp:], s)
+        }</span>
+        <span class="cov8" title="1">return string(b)</span>
+}
+
+// HasPrefix tests whether the string s begins with prefix.
+func HasPrefix(s, prefix string) bool <span class="cov8" title="1">{
+        return len(s) &gt;= len(prefix) &amp;&amp; s[0:len(prefix)] == prefix
+}</span>
+
+// HasSuffix tests whether the string s ends with suffix.
+func HasSuffix(s, suffix string) bool <span class="cov8" title="1">{
+        return len(s) &gt;= len(suffix) &amp;&amp; s[len(s)-len(suffix):] == suffix
+}</span>
+
+// Map returns a copy of the string s with all its characters modified
+// according to the mapping function. If mapping returns a negative value, the character is
+// dropped from the string with no replacement.
+func Map(mapping func(rune) rune, s string) string <span class="cov8" title="1">{
+        // In the worst case, the string can grow when mapped, making
+        // things unpleasant.  But it's so rare we barge in assuming it's
+        // fine.  It could also shrink but that falls out naturally.
+        maxbytes := len(s) // length of b
+        nbytes := 0        // number of bytes encoded in b
+        // The output buffer b is initialized on demand, the first
+        // time a character differs.
+        var b []byte
+
+        for i, c := range s </span><span class="cov8" title="1">{
+                r := mapping(c)
+                if b == nil </span><span class="cov8" title="1">{
+                        if r == c </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">b = make([]byte, maxbytes)
+                        nbytes = copy(b, s[:i])</span>
+                }
+                <span class="cov8" title="1">if r &gt;= 0 </span><span class="cov8" title="1">{
+                        wid := 1
+                        if r &gt;= utf8.RuneSelf </span><span class="cov8" title="1">{
+                                wid = utf8.RuneLen(r)
+                        }</span>
+                        <span class="cov8" title="1">if nbytes+wid &gt; maxbytes </span><span class="cov8" title="1">{
+                                // Grow the buffer.
+                                maxbytes = maxbytes*2 + utf8.UTFMax
+                                nb := make([]byte, maxbytes)
+                                copy(nb, b[0:nbytes])
+                                b = nb
+                        }</span>
+                        <span class="cov8" title="1">nbytes += utf8.EncodeRune(b[nbytes:maxbytes], r)</span>
+                }
+        }
+        <span class="cov8" title="1">if b == nil </span><span class="cov8" title="1">{
+                return s
+        }</span>
+        <span class="cov8" title="1">return string(b[0:nbytes])</span>
+}
+
+// Repeat returns a new string consisting of count copies of the string s.
+func Repeat(s string, count int) string <span class="cov8" title="1">{
+        b := make([]byte, len(s)*count)
+        bp := copy(b, s)
+        for bp &lt; len(b) </span><span class="cov8" title="1">{
+                copy(b[bp:], b[:bp])
+                bp *= 2
+        }</span>
+        <span class="cov8" title="1">return string(b)</span>
+}
+
+// ToUpper returns a copy of the string s with all Unicode letters mapped to their upper case.
+func ToUpper(s string) string <span class="cov8" title="1">{ return Map(unicode.ToUpper, s) }</span>
+
+// ToLower returns a copy of the string s with all Unicode letters mapped to their lower case.
+func ToLower(s string) string <span class="cov8" title="1">{ return Map(unicode.ToLower, s) }</span>
+
+// ToTitle returns a copy of the string s with all Unicode letters mapped to their title case.
+func ToTitle(s string) string <span class="cov8" title="1">{ return Map(unicode.ToTitle, s) }</span>
+
+// ToUpperSpecial returns a copy of the string s with all Unicode letters mapped to their
+// upper case, giving priority to the special casing rules.
+func ToUpperSpecial(_case unicode.SpecialCase, s string) string <span class="cov8" title="1">{
+        return Map(func(r rune) rune </span><span class="cov8" title="1">{ return _case.ToUpper(r) }</span>, s)
+}
+
+// ToLowerSpecial returns a copy of the string s with all Unicode letters mapped to their
+// lower case, giving priority to the special casing rules.
+func ToLowerSpecial(_case unicode.SpecialCase, s string) string <span class="cov8" title="1">{
+        return Map(func(r rune) rune </span><span class="cov8" title="1">{ return _case.ToLower(r) }</span>, s)
+}
+
+// ToTitleSpecial returns a copy of the string s with all Unicode letters mapped to their
+// title case, giving priority to the special casing rules.
+func ToTitleSpecial(_case unicode.SpecialCase, s string) string <span class="cov0" title="0">{
+        return Map(func(r rune) rune </span><span class="cov0" title="0">{ return _case.ToTitle(r) }</span>, s)
+}
+
+// isSeparator reports whether the rune could mark a word boundary.
+// TODO: update when package unicode captures more of the properties.
+func isSeparator(r rune) bool <span class="cov8" title="1">{
+        // ASCII alphanumerics and underscore are not separators
+        if r &lt;= 0x7F </span><span class="cov8" title="1">{
+                switch </span>{
+                <span class="cov8" title="1">case '0' &lt;= r &amp;&amp; r &lt;= '9':
+                        return false</span>
+                <span class="cov8" title="1">case 'a' &lt;= r &amp;&amp; r &lt;= 'z':
+                        return false</span>
+                <span class="cov8" title="1">case 'A' &lt;= r &amp;&amp; r &lt;= 'Z':
+                        return false</span>
+                <span class="cov8" title="1">case r == '_':
+                        return false</span>
+                }
+                <span class="cov8" title="1">return true</span>
+        }
+        // Letters and digits are not separators
+        <span class="cov8" title="1">if unicode.IsLetter(r) || unicode.IsDigit(r) </span><span class="cov8" title="1">{
+                return false
+        }</span>
+        // Otherwise, all we can do for now is treat spaces as separators.
+        <span class="cov8" title="1">return unicode.IsSpace(r)</span>
+}
+
+// Title returns a copy of the string s with all Unicode letters that begin words
+// mapped to their title case.
+//
+// BUG: The rule Title uses for word boundaries does not handle Unicode punctuation properly.
+func Title(s string) string <span class="cov8" title="1">{
+        // Use a closure here to remember state.
+        // Hackish but effective. Depends on Map scanning in order and calling
+        // the closure once per rune.
+        prev := ' '
+        return Map(
+                func(r rune) rune </span><span class="cov8" title="1">{
+                        if isSeparator(prev) </span><span class="cov8" title="1">{
+                                prev = r
+                                return unicode.ToTitle(r)
+                        }</span>
+                        <span class="cov8" title="1">prev = r
+                        return r</span>
+                },
+                s)
+}
+
+// TrimLeftFunc returns a slice of the string s with all leading
+// Unicode code points c satisfying f(c) removed.
+func TrimLeftFunc(s string, f func(rune) bool) string <span class="cov8" title="1">{
+        i := indexFunc(s, f, false)
+        if i == -1 </span><span class="cov8" title="1">{
+                return ""
+        }</span>
+        <span class="cov8" title="1">return s[i:]</span>
+}
+
+// TrimRightFunc returns a slice of the string s with all trailing
+// Unicode code points c satisfying f(c) removed.
+func TrimRightFunc(s string, f func(rune) bool) string <span class="cov8" title="1">{
+        i := lastIndexFunc(s, f, false)
+        if i &gt;= 0 &amp;&amp; s[i] &gt;= utf8.RuneSelf </span><span class="cov8" title="1">{
+                _, wid := utf8.DecodeRuneInString(s[i:])
+                i += wid
+        }</span><span class="cov8" title="1"> else {
+                i++
+        }</span>
+        <span class="cov8" title="1">return s[0:i]</span>
+}
+
+// TrimFunc returns a slice of the string s with all leading
+// and trailing Unicode code points c satisfying f(c) removed.
+func TrimFunc(s string, f func(rune) bool) string <span class="cov8" title="1">{
+        return TrimRightFunc(TrimLeftFunc(s, f), f)
+}</span>
+
+// IndexFunc returns the index into s of the first Unicode
+// code point satisfying f(c), or -1 if none do.
+func IndexFunc(s string, f func(rune) bool) int <span class="cov8" title="1">{
+        return indexFunc(s, f, true)
+}</span>
+
+// LastIndexFunc returns the index into s of the last
+// Unicode code point satisfying f(c), or -1 if none do.
+func LastIndexFunc(s string, f func(rune) bool) int <span class="cov8" title="1">{
+        return lastIndexFunc(s, f, true)
+}</span>
+
+// indexFunc is the same as IndexFunc except that if
+// truth==false, the sense of the predicate function is
+// inverted.
+func indexFunc(s string, f func(rune) bool, truth bool) int <span class="cov8" title="1">{
+        start := 0
+        for start &lt; len(s) </span><span class="cov8" title="1">{
+                wid := 1
+                r := rune(s[start])
+                if r &gt;= utf8.RuneSelf </span><span class="cov8" title="1">{
+                        r, wid = utf8.DecodeRuneInString(s[start:])
+                }</span>
+                <span class="cov8" title="1">if f(r) == truth </span><span class="cov8" title="1">{
+                        return start
+                }</span>
+                <span class="cov8" title="1">start += wid</span>
+        }
+        <span class="cov8" title="1">return -1</span>
+}
+
+// lastIndexFunc is the same as LastIndexFunc except that if
+// truth==false, the sense of the predicate function is
+// inverted.
+func lastIndexFunc(s string, f func(rune) bool, truth bool) int <span class="cov8" title="1">{
+        for i := len(s); i &gt; 0; </span><span class="cov8" title="1">{
+                r, size := utf8.DecodeLastRuneInString(s[0:i])
+                i -= size
+                if f(r) == truth </span><span class="cov8" title="1">{
+                        return i
+                }</span>
+        }
+        <span class="cov8" title="1">return -1</span>
+}
+
+func makeCutsetFunc(cutset string) func(rune) bool <span class="cov8" title="1">{
+        return func(r rune) bool </span><span class="cov8" title="1">{ return IndexRune(cutset, r) &gt;= 0 }</span>
+}
+
+// Trim returns a slice of the string s with all leading and
+// trailing Unicode code points contained in cutset removed.
+func Trim(s string, cutset string) string <span class="cov8" title="1">{
+        if s == "" || cutset == "" </span><span class="cov8" title="1">{
+                return s
+        }</span>
+        <span class="cov8" title="1">return TrimFunc(s, makeCutsetFunc(cutset))</span>
+}
+
+// TrimLeft returns a slice of the string s with all leading
+// Unicode code points contained in cutset removed.
+func TrimLeft(s string, cutset string) string <span class="cov8" title="1">{
+        if s == "" || cutset == "" </span><span class="cov8" title="1">{
+                return s
+        }</span>
+        <span class="cov8" title="1">return TrimLeftFunc(s, makeCutsetFunc(cutset))</span>
+}
+
+// TrimRight returns a slice of the string s, with all trailing
+// Unicode code points contained in cutset removed.
+func TrimRight(s string, cutset string) string <span class="cov8" title="1">{
+        if s == "" || cutset == "" </span><span class="cov8" title="1">{
+                return s
+        }</span>
+        <span class="cov8" title="1">return TrimRightFunc(s, makeCutsetFunc(cutset))</span>
+}
+
+// TrimSpace returns a slice of the string s, with all leading
+// and trailing white space removed, as defined by Unicode.
+func TrimSpace(s string) string <span class="cov8" title="1">{
+        return TrimFunc(s, unicode.IsSpace)
+}</span>
+
+// TrimPrefix returns s without the provided leading prefix string.
+// If s doesn't start with prefix, s is returned unchanged.
+func TrimPrefix(s, prefix string) string <span class="cov8" title="1">{
+        if HasPrefix(s, prefix) </span><span class="cov8" title="1">{
+                return s[len(prefix):]
+        }</span>
+        <span class="cov8" title="1">return s</span>
+}
+
+// TrimSuffix returns s without the provided trailing suffix string.
+// If s doesn't end with suffix, s is returned unchanged.
+func TrimSuffix(s, suffix string) string <span class="cov8" title="1">{
+        if HasSuffix(s, suffix) </span><span class="cov8" title="1">{
+                return s[:len(s)-len(suffix)]
+        }</span>
+        <span class="cov8" title="1">return s</span>
+}
+
+// Replace returns a copy of the string s with the first n
+// non-overlapping instances of old replaced by new.
+// If old is empty, it matches at the beginning of the string
+// and after each UTF-8 sequence, yielding up to k+1 replacements
+// for a k-rune string.
+// If n &lt; 0, there is no limit on the number of replacements.
+func Replace(s, old, new string, n int) string <span class="cov8" title="1">{
+        if old == new || n == 0 </span><span class="cov8" title="1">{
+                return s // avoid allocation
+        }</span>
+
+        // Compute number of replacements.
+        <span class="cov8" title="1">if m := Count(s, old); m == 0 </span><span class="cov8" title="1">{
+                return s // avoid allocation
+        }</span><span class="cov8" title="1"> else if n &lt; 0 || m &lt; n </span><span class="cov8" title="1">{
+                n = m
+        }</span>
+
+        // Apply replacements to buffer.
+        <span class="cov8" title="1">t := make([]byte, len(s)+n*(len(new)-len(old)))
+        w := 0
+        start := 0
+        for i := 0; i &lt; n; i++ </span><span class="cov8" title="1">{
+                j := start
+                if len(old) == 0 </span><span class="cov8" title="1">{
+                        if i &gt; 0 </span><span class="cov8" title="1">{
+                                _, wid := utf8.DecodeRuneInString(s[start:])
+                                j += wid
+                        }</span>
+                }<span class="cov8" title="1"> else {
+                        j += Index(s[start:], old)
+                }</span>
+                <span class="cov8" title="1">w += copy(t[w:], s[start:j])
+                w += copy(t[w:], new)
+                start = j + len(old)</span>
+        }
+        <span class="cov8" title="1">w += copy(t[w:], s[start:])
+        return string(t[0:w])</span>
+}
+
+// EqualFold reports whether s and t, interpreted as UTF-8 strings,
+// are equal under Unicode case-folding.
+func EqualFold(s, t string) bool <span class="cov8" title="1">{
+        for s != "" &amp;&amp; t != "" </span><span class="cov8" title="1">{
+                // Extract first rune from each string.
+                var sr, tr rune
+                if s[0] &lt; utf8.RuneSelf </span><span class="cov8" title="1">{
+                        sr, s = rune(s[0]), s[1:]
+                }</span><span class="cov8" title="1"> else {
+                        r, size := utf8.DecodeRuneInString(s)
+                        sr, s = r, s[size:]
+                }</span>
+                <span class="cov8" title="1">if t[0] &lt; utf8.RuneSelf </span><span class="cov8" title="1">{
+                        tr, t = rune(t[0]), t[1:]
+                }</span><span class="cov8" title="1"> else {
+                        r, size := utf8.DecodeRuneInString(t)
+                        tr, t = r, t[size:]
+                }</span>
+
+                // If they match, keep going; if not, return false.
+
+                // Easy case.
+                <span class="cov8" title="1">if tr == sr </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+
+                // Make sr &lt; tr to simplify what follows.
+                <span class="cov8" title="1">if tr &lt; sr </span><span class="cov8" title="1">{
+                        tr, sr = sr, tr
+                }</span>
+                // Fast check for ASCII.
+                <span class="cov8" title="1">if tr &lt; utf8.RuneSelf &amp;&amp; 'A' &lt;= sr &amp;&amp; sr &lt;= 'Z' </span><span class="cov8" title="1">{
+                        // ASCII, and sr is upper case.  tr must be lower case.
+                        if tr == sr+'a'-'A' </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">return false</span>
+                }
+
+                // General case.  SimpleFold(x) returns the next equivalent rune &gt; x
+                // or wraps around to smaller values.
+                <span class="cov8" title="1">r := unicode.SimpleFold(sr)
+                for r != sr &amp;&amp; r &lt; tr </span><span class="cov8" title="1">{
+                        r = unicode.SimpleFold(r)
+                }</span>
+                <span class="cov8" title="1">if r == tr </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">return false</span>
+        }
+
+        // One string is empty.  Are both?
+        <span class="cov8" title="1">return s == t</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible = document.getElementById('file0');
+		files.addEventListener('change', onChange, false);
+		function onChange() {
+			visible.style.display = 'none';
+			visible = document.getElementById(files.value);
+			visible.style.display = 'block';
+			window.scrollTo(0, 0);
+		}
+	})();
+	</script>
+</html>
