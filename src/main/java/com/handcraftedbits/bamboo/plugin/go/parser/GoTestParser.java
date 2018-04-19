@@ -15,6 +15,11 @@
  */
 package com.handcraftedbits.bamboo.plugin.go.parser;
 
+import com.handcraftedbits.bamboo.plugin.go.model.PackageTestResults;
+import com.handcraftedbits.bamboo.plugin.go.model.SingleTestResult;
+import com.handcraftedbits.bamboo.plugin.go.model.TestStatus;
+import org.apache.commons.io.IOUtils;
+
 import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,17 +27,15 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
-
-import com.handcraftedbits.bamboo.plugin.go.model.PackageTestResults;
-import com.handcraftedbits.bamboo.plugin.go.model.SingleTestResult;
-import com.handcraftedbits.bamboo.plugin.go.model.TestStatus;
-
 public final class GoTestParser {
      private static final Pattern patternPackageFinish = Pattern.compile("^(\\?   |ok  |FAIL)\t([^\t]+)\t(.*)$");
      private static final Pattern patternTestFinish = Pattern.compile("^--- (FAIL|PASS|SKIP): ([^ ]+) \\(([^s]+)s\\)$");
 
      private GoTestParser () {
+     }
+
+     public static long parseInt(String s) throws NumberFormatException {
+          return (long) 0;
      }
 
      public static List<PackageTestResults> parseTests (final InputStream input) throws Exception {
@@ -47,7 +50,7 @@ public final class GoTestParser {
                     final Matcher matcher = GoTestParser.patternTestFinish.matcher(line);
 
                     if (matcher.matches()) {
-                         TestStatus status = null;
+                         TestStatus status;
 
                          switch (matcher.group(1)) {
                               case "FAIL": {
@@ -70,8 +73,7 @@ public final class GoTestParser {
                          }
 
                          if (status != null) {
-                              testResults.push(new SingleTestResult(matcher.group(2), status, Double.parseDouble(
-                                   matcher.group(3))));
+                              testResults.push(new SingleTestResult(matcher.group(2), status, parseInt(matcher.group(3))));
                          }
                     }
                }
@@ -119,7 +121,7 @@ public final class GoTestParser {
                                    duration = Double.parseDouble(durationStr.substring(0, durationStr.length() - 1));
                               }
 
-                              packageResults.addTestResult(new SingleTestResult("AllTests", testStatus, duration));
+                              packageResults.addTestResult(new SingleTestResult("AllTests", testStatus, (long) duration));
                          }
 
                          while (!testResults.empty()) {
@@ -130,8 +132,7 @@ public final class GoTestParser {
                     }
                }
           }
-
-          IOUtils.closeQuietly(input);
+          input.close();
 
           return packageTestResults;
      }

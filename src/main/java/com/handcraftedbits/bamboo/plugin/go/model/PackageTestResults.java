@@ -15,17 +15,15 @@
  */
 package com.handcraftedbits.bamboo.plugin.go.model;
 
-import java.util.LinkedList;
-import java.util.List;
-
-import org.jetbrains.annotations.NotNull;
-
 import com.atlassian.bamboo.build.test.TestCollectionResult;
 import com.atlassian.bamboo.build.test.TestCollectionResultBuilder;
 import com.atlassian.bamboo.results.tests.TestResults;
 import com.atlassian.bamboo.resultsummary.tests.TestState;
-
 import edu.emory.mathcs.backport.java.util.Collections;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.LinkedList;
+import java.util.List;
 
 public final class PackageTestResults {
      private final String name;
@@ -61,8 +59,7 @@ public final class PackageTestResults {
           for (final SingleTestResult testResult : this.testResults) {
                switch (testResult.getStatus()) {
                     case FAILED: {
-                         final TestResults testResults = new TestResults(this.name, testResult.getName(), "" +
-                              testResult.getDuration());
+                         final TestResults testResults = new TestResults(this.name, testResult.getName(), testResult.getDuration());
 
                          testResults.setState(TestState.FAILED);
 
@@ -72,8 +69,7 @@ public final class PackageTestResults {
                     }
 
                     case PASSED: {
-                         final TestResults testResults = new TestResults(this.name, testResult.getName(), "" +
-                              testResult.getDuration());
+                         final TestResults testResults = new TestResults(this.name, testResult.getName(), testResult.getDuration());
 
                          testResults.setState(TestState.SUCCESS);
 
@@ -83,8 +79,7 @@ public final class PackageTestResults {
                     }
 
                     case SKIPPED: {
-                         final TestResults testResults = new TestResults(this.name, testResult.getName(), "" +
-                              testResult.getDuration());
+                         final TestResults testResults = new TestResults(this.name, testResult.getName(), testResult.getDuration());
 
                          testResults.setState(TestState.SKIPPED);
 

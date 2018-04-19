@@ -27,7 +27,7 @@
    <parent>
       <groupId>com.handcraftedbits</groupId>
       <artifactId>handcraftedbits-parent-java</artifactId>
-      <version>1.2.2</version>
+    <version>1.2.12</version>
    </parent>
    <scm>
       <url>https://github.com/edwinakatosh/go-bamboo-plugin</url>
@@ -46,13 +46,26 @@
       <bamboo.data.version>6.4.1</bamboo.data.version>
       <amps.version>6.3.15</amps.version>
       <version.plugin.shade>3.1.0</version.plugin.shade>
+    <checkstyle.skip>true</checkstyle.skip>
    </properties>
    <dependencies>
       <dependency>
-         <groupId>com.atlassian.bamboo</groupId>
-         <artifactId>atlassian-bamboo-web</artifactId>
-         <version>${version.dep.bamboo}</version>
-         <scope>provided</scope>
+        <groupId>com.atlassian.bamboo</groupId>
+        <artifactId>atlassian-bamboo-web</artifactId>
+        <version>${version.dep.bamboo}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.atlassian.bamboo</groupId>
+        <artifactId>atlassian-bamboo-api</artifactId>
+        <version>${version.dep.bamboo}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.atlassian.bamboo</groupId>
+        <artifactId>atlassian-bamboo-core</artifactId>
+        <version>${version.dep.bamboo}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
          <groupId>org.jsoup</groupId>
@@ -61,10 +74,21 @@
          <scope>compile</scope>
       </dependency>
       <dependency>
-         <groupId>edu.emory.mathcs.backport</groupId>
-         <artifactId>com.springsource.edu.emory.mathcs.backport</artifactId>
-         <version>3.1.0</version>
+        <groupId>edu.emory.mathcs.backport</groupId>
+        <artifactId>com.springsource.edu.emory.mathcs.backport</artifactId>
+        <version>3.1.0</version>
       </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>2.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>6.9.9</version>
+      <scope>test</scope>
+    </dependency>
    </dependencies>
    <build>
       <plugins>

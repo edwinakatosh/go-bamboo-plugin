@@ -15,10 +15,10 @@
  */
 package com.handcraftedbits.bamboo.plugin.go.task.common;
 
-import java.util.HashSet;
-
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.util.HashSet;
 
 public final class GoPackageDefinitionTest {
      @Test

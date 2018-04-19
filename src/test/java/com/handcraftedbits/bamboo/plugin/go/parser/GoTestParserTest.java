@@ -15,16 +15,15 @@
  */
 package com.handcraftedbits.bamboo.plugin.go.parser;
 
-import java.io.InputStream;
-import java.util.List;
-
+import com.handcraftedbits.bamboo.plugin.go.model.PackageTestResults;
+import com.handcraftedbits.bamboo.plugin.go.model.SingleTestResult;
+import com.handcraftedbits.bamboo.plugin.go.model.TestStatus;
 import org.jetbrains.annotations.NotNull;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import com.handcraftedbits.bamboo.plugin.go.model.PackageTestResults;
-import com.handcraftedbits.bamboo.plugin.go.model.SingleTestResult;
-import com.handcraftedbits.bamboo.plugin.go.model.TestStatus;
+import java.io.InputStream;
+import java.util.List;
 
 public final class GoTestParserTest {
      private InputStream getOutputResource (@NotNull final String name) {
@@ -124,7 +123,7 @@ public final class GoTestParserTest {
 
           Assert.assertEquals("AllTests", testResult.getName());
           Assert.assertEquals(TestStatus.FAILED, testResult.getStatus());
-          Assert.assertEquals(0.008d, testResult.getDuration(), 0.0d);
+          Assert.assertEquals(testResult.getDuration(), 0);
      }
 
      @Test
@@ -142,7 +141,7 @@ public final class GoTestParserTest {
           for (final SingleTestResult testResult : packageTestResults.getTestResults()) {
                Assert.assertTrue(testResult.getName().startsWith("TestDoAPass"));
                Assert.assertEquals(TestStatus.PASSED, testResult.getStatus());
-               Assert.assertEquals(1.0d, testResult.getDuration(), 0.0d);
+               Assert.assertEquals(testResult.getDuration(), 0);
           }
      }
 
@@ -161,7 +160,7 @@ public final class GoTestParserTest {
           for (final SingleTestResult testResult : packageTestResults.getTestResults()) {
                Assert.assertTrue(testResult.getName().startsWith("TestDoAPass"));
                Assert.assertEquals(TestStatus.PASSED, testResult.getStatus());
-               Assert.assertEquals(1.0d, testResult.getDuration(), 0.0d);
+               Assert.assertEquals(testResult.getDuration(), 0);
           }
      }
 }

@@ -15,13 +15,13 @@
  */
 package com.handcraftedbits.bamboo.plugin.go.covermerge;
 
-import java.io.InputStream;
-
 import org.apache.commons.io.IOUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.select.Elements;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.io.InputStream;
 
 public final class CoverMergeTest {
      @Test
@@ -41,7 +41,7 @@ public final class CoverMergeTest {
 
           finally {
                for (final InputStream inputStream : inputStreams) {
-                    IOUtils.closeQuietly(inputStream);
+                    inputStream.close();
                }
           }
      }
@@ -62,7 +62,7 @@ public final class CoverMergeTest {
 
           finally {
                for (final InputStream inputStream : inputStreams) {
-                    IOUtils.closeQuietly(inputStream);
+                    inputStream.close();
                }
           }
      }
@@ -85,7 +85,7 @@ public final class CoverMergeTest {
 
           finally {
                for (final InputStream inputStream : inputStreams) {
-                    IOUtils.closeQuietly(inputStream);
+                    inputStream.close();
                }
           }
      }
@@ -106,7 +106,7 @@ public final class CoverMergeTest {
 
           finally {
                for (final InputStream inputStream : inputStreams) {
-                    IOUtils.closeQuietly(inputStream);
+                    inputStream.close();
                }
           }
      }
@@ -139,7 +139,7 @@ public final class CoverMergeTest {
 
           finally {
                for (final InputStream inputStream : inputStreams) {
-                    IOUtils.closeQuietly(inputStream);
+                    inputStream.close();
                }
           }
      }

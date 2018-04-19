@@ -18,17 +18,17 @@ package com.handcraftedbits.bamboo.plugin.go.model;
 import org.jetbrains.annotations.NotNull;
 
 public final class SingleTestResult {
-     private final double duration;
+     private final long duration;
      private final String name;
      private final TestStatus status;
 
-     public SingleTestResult (@NotNull final String name, @NotNull final TestStatus status, final double duration) {
+     public SingleTestResult (@NotNull final String name, @NotNull final TestStatus status, final long duration) {
           this.duration = duration;
           this.name = name;
           this.status = status;
      }
 
-     public double getDuration () {
+     public long getDuration () {
           return this.duration;
      }
 
