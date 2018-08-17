@@ -28,7 +28,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class GoTestParser {
-     private static final Pattern patternPackageFinish = Pattern.compile("^(\\?   |ok  |FAIL)\t([^\t]+)\t(.*)$");
+     private static final Pattern patternPackageFinish = Pattern.compile("^(\\?   |ok  |FAIL)\t([^\t]+)\\s(.*)$");
      private static final Pattern patternTestFinish = Pattern.compile("^--- (FAIL|PASS|SKIP): ([^ ]+) \\(([^s]+)s\\)$");
 
      private GoTestParser () {
